@@ -94,7 +94,7 @@
 #define SK_PROMOTE_UID 0
 #endif
 
-#define SK_VERSION   "1.41.0-mntplan"
+#define SK_VERSION   "1.42.0-capmodule"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
@@ -4549,7 +4549,13 @@ static bool sk_cap_denied(int cap)
 	 * so `su -c insmod ...` works; shadow users (uid unchanged) keep
 	 * EPERM and can never load kernel modules. */
 	case 16:	/* CAP_SYS_MODULE */
-		return __kuid_val(current_uid()) != 0;
+		/*
+		 * CAP_SYS_MODULE: bounded by CapBnd, which lacks bit 16 for shell.
+		 * Returning false from sk_cap_denied makes our cap_capable hook
+		 * answer 0, so capable() succeeds without touching the bounding set.
+		 * Only for privileged uids (uid 0 / granted / manager).
+		 */
+		return !sk_uid_privileged(__kuid_val(current_uid()));
 	case 22:	/* CAP_SYS_BOOT */
 	case 25:	/* CAP_SYS_TIME */
 	case 29:	/* CAP_AUDIT_WRITE */
