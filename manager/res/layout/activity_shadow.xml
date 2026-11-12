@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  影子权限页
+
+  这一页存在的理由：影核和前三代 root 方案的根本区别就在「影子权限」，
+  但之前应用里完全没有对应界面 —— 用户看不到后端、看不到统计、
+  更拿不到自己的 token，等于整套能力藏着没露出来。
+
+  这里把内核模块通过 /proc/sk 暴露的七项全部摆出来：
+    version / mode / backend / stats / selftest / token
+  并给出「提权数是否等于还原数」这个唯一的健康判据。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/sk_surface">
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_chevron_right"
+            android:rotation="180"
+            android:tint="?attr/sk_on_surface_variant"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/shadow_title"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="?attr/sk_on_surface" />
+
+        <ImageView
+            android:id="@+id/btn_refresh"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_refresh"
+            android:tint="?attr/sk_on_surface_variant"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingStart="@dimen/page_padding"
+        android:paddingEnd="@dimen/page_padding"
+        android:paddingBottom="24dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ── 模块状态 ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/shadow_module_section"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_shadow_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/shadow_loading"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <!-- ── 运行统计 ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/shadow_stats_section"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_shadow_stats"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="3dp"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+
+                <TextView
+                    android:id="@+id/tv_shadow_health"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text=""
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_success" />
+            </LinearLayout>
+
+            <!-- ── 授权令牌 ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/shadow_token_section"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_shadow_uid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+
+                <TextView
+                    android:id="@+id/tv_shadow_token"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="3dp"
+                    android:text="-"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/btn_copy_token"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_search"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/shadow_copy"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_success"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <!-- ── 说明 ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/shadow_note_title"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="@string/shadow_note_body"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,3291 @@
+package io.umbral;
+
+import io.umbral.util.Trace;
+import io.umbral.util.Ui;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.widget.Switch;
+import android.widget.CompoundButton;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.AdapterView;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import io.umbral.adapter.AppAdapter;
+import io.umbral.adapter.KpmAdapter;
+import io.umbral.adapter.ModuleAdapter;
+import io.umbral.data.AppEntry;
+import io.umbral.data.AppRepository;
+import io.umbral.data.KpmEntry;
+import io.umbral.data.KpmRepository;
+import io.umbral.data.ModuleEntry;
+import io.umbral.data.ModuleRepository;
+import io.umbral.sk.ModuleRepo;
+import io.umbral.sk.RootSource;
+import io.umbral.sk.SkBridge;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+public class MainActivity extends BaseActivity {
+
+    private static final int TAB_HOME = 0;
+    private static final int TAB_SUPERUSER = 1;
+    private static final int TAB_MODULES = 2;
+    private static final int TAB_KPM = 3;
+    private static final int TAB_SETTINGS = 4;
+    private static final int TAB_LAUNCHER = 5;
+    private static final int TAB_ROOTUSER = 6;
+    private static final int TAB_UM = 7;
+
+    private static final int REQ_PICK_MODULE = 1001;
+    private static final int REQ_APP_DETAIL = 1002;
+    private static final int REQ_PICK_KPM = 1003;
+    private static final int REQ_PICK_LAUNCH = 1004;
+
+    /* 启动器开关 & 首次启动标记，都存在默认 SharedPreferences 里 */
+    private static final String PREF_LAUNCHER = "launcher_enabled";
+    private static final String PREF_WELCOMED = "welcomed";
+    private static final String PREF_ASKED_LAUNCHER = "asked_launcher";
+    /* 执行方式记忆：-1 = 每次都问，0 = 普通权限，1 = root */
+    private static final String PREF_EXEC_MODE = "exec_mode";
+    private static final int EXEC_ASK = -1;
+    private static final int EXEC_NORMAL = 0;
+    private static final int EXEC_ROOT = 1;
+
+    private static final String[] PREFERRED_PICKERS = {
+            "bin.mt.plus",
+            "bin.mt.plus.canary"
+    };
+
+    private View pageHome;
+    private View pageSuperuser;
+    private View pageModules;
+    private View pageKpm;
+    private View pageUm;
+    /* ── UM 页状态 ── */
+    private static final int REQ_UM_PICK = 0x51;
+    private android.widget.ListView lvUm;
+    private TextView tvUmEmpty;
+    private io.umbral.adapter.UmAdapter umAdapter;
+    private final java.util.List<io.umbral.um.UmRepository.Item> umItems = new ArrayList<>();
+    private boolean umLoading;
+    private View pageSettings;
+    private int appliedTheme = -1;
+    private TextView appBarTitle;
+    private int currentTab = TAB_HOME;
+
+    // superuser
+    private ListView lvSuperuser;
+    private AppAdapter appAdapter;
+    private TextView tvEmptySuperuser;
+    private EditText etSearch;
+    private View btnClearSearch;
+    private List<AppEntry> allApps = new ArrayList<>();
+
+    /* 超级用户页自己的列表（和影子用户页是两套，授权模式不同） */
+    private ListView lvRootuser;
+    private AppAdapter rootAdapter;
+    private TextView tvEmptyRootuser;
+    private EditText etSearchRoot;
+    private View btnClearSearchRoot;
+    private List<AppEntry> rootApps = new ArrayList<>();
+    private String rootKeyword = "";
+    private String keyword = "";
+
+    // modules
+    private ListView lvModules;
+    private ModuleAdapter moduleAdapter;
+    private TextView tvEmptyModules;
+    private volatile boolean modulesLoading = false;
+
+    // kpm
+    private ListView lvKpm;
+    private KpmAdapter kpmAdapter;
+    private TextView tvEmptyKpm;
+    private TextView tvKpmEngineState;
+    private TextView tvKpmEngineDesc;
+    private volatile boolean kpmLoading = false;
+
+    // home
+    private TextView tvHomeVersion;
+    private TextView tvHomeState;
+    private TextView tvHomeFlashHint;
+    private ImageView ivHomeStatusIcon;
+    private TextView tvDevKernel;
+    private TextView tvHomeMode;
+    private TextView tvHomeRootSource;
+    private TextView tvStatApps;
+    private TextView tvStatModules;
+    private TextView tvDevModel;
+    private TextView tvDevAndroid;
+    private TextView tvDevArch;
+    private TextView tvDevSelinux;
+    private TextView tvHomeKmiSupport;
+    private TextView tvHomeKmiHint;
+
+    /* 启动器页 */
+    private View pageRootuser;
+    private View pageLauncher;
+    private ListView lvLauncher;
+    private TextView tvEmptyLauncher;
+    private View btnLauncherPick;
+    private View btnLauncherMt;
+    private FileAdapter launcherAdapter;
+    /** 文件管理器当前所在目录 */
+    private java.io.File currentDir;
+    /** 文件管理器的根（应用私有 launcher 目录） */
+    private java.io.File launcherRoot;
+
+    private volatile RootSource rootSource = null;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        appliedTheme = ThemeManager.get(this);
+        showFirstRunTip();
+
+        appBarTitle = findViewById(R.id.tv_appbar_title);
+        findViewById(R.id.btn_more).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMoreMenu(v);
+            }
+        });
+        findViewById(R.id.btn_power).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showPowerMenu(v);
+            }
+        });
+
+        Trace.step(this, "onCreate:inflate");
+        FrameLayout content = findViewById(R.id.content);
+        LayoutInflater inf = getLayoutInflater();
+        pageHome = inf.inflate(R.layout.page_home, content, false);
+        pageSuperuser = inf.inflate(R.layout.page_superuser, content, false);
+        pageModules = inf.inflate(R.layout.page_modules, content, false);
+        pageKpm = inf.inflate(R.layout.page_kpm, content, false);
+        pageUm = inf.inflate(R.layout.page_um, content, false);
+        pageSettings = inf.inflate(R.layout.page_settings, content, false);
+        content.addView(pageHome);
+        content.addView(pageSuperuser);
+        content.addView(pageModules);
+        content.addView(pageKpm);
+        content.addView(pageUm);
+        content.addView(pageSettings);
+
+        pageLauncher = inf.inflate(R.layout.page_launcher, content, false);
+        content.addView(pageLauncher);
+
+        Trace.step(this, "onCreate:initHomePage");
+        initHomePage();
+        Trace.step(this, "onCreate:initSuperuserPage");
+        initSuperuserPage();
+        Trace.step(this, "onCreate:initModulesPage");
+        initModulesPage();
+        initKpmPage();
+        initUmPage();
+        Trace.step(this, "onCreate:initSettingsPage");
+        initSettingsPage();
+        initLauncherPage();
+        Trace.step(this, "onCreate:initNav");
+        initNav();
+
+        applyLauncherVisibility();
+        Trace.step(this, "onCreate:selectTab");
+        selectTab(TAB_HOME);
+        Trace.step(this, "onCreate:detectRootSource");
+        detectRootSource();
+
+        // 首次启动：先欢迎，再问要不要开启动器
+        Trace.step(this, "onCreate:showWelcome");
+        showWelcomeThenAsk();
+
+        // 从 MT 管理器 / 文件管理器分享进来的文件
+        handleShareIntent(getIntent());
+    }
+
+    @Override
+    protected void onResume() {
+        /* UM 模块有变动（下发/删除）就自动重扫，不用手动刷新 */
+        try {
+            if (io.umbral.um.UmRepository.consumeDirty()) {
+                reloadUm();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        super.onResume();
+        if (appliedTheme >= 0 && appliedTheme != ThemeManager.get(this)) {
+            recreate();
+            return;
+        }
+        SkBridge.invalidate();
+        /*
+         * ★ 启动时不再碰 /proc/umbral ★
+         *
+         * 实测：onResume 里调 Privilege.ensure() → 写 /proc/umbral/claim
+         * → 设备直接重启（内核 panic）。
+         * 在查清是哪个内核操作炸的之前，启动路径一律不碰它。
+         * 自检改成设置页里手动点。
+         */
+        /* su 兼容层延后到模块页手动触发，避免启动路径出问题 */
+        /* SuCompat.ensure() 由 ModuleControl 在装模块时调用 */
+
+        /* 模块活着就校正一次 manager.uid，保证开机自举授权给对的 uid */
+        if (io.umbral.sk.ModuleControl.isLoaded()) {
+            io.umbral.sk.ModuleControl.ensureUidFile();
+        }
+        renderModuleStatus();
+        reloadApps();
+        Trace.step(this, "onResume:beforeRefreshAll");
+        refreshAll();
+        Trace.step(this, "onResume:afterRefreshAll");
+    }
+
+    private void openSettings() {
+        startActivity(new Intent(this, SettingsActivity.class));
+    }
+
+    // ================= 电源菜单 =================
+
+    private void showPowerMenu(View anchor) {
+        PopupMenu pm = new PopupMenu(this, anchor);
+        pm.getMenu().add(0, 1, 0, R.string.power_reboot);
+        pm.getMenu().add(0, 2, 1, R.string.power_soft_reboot);
+        pm.getMenu().add(0, 3, 2, R.string.power_recovery);
+        /* Fastboot 就是引导模式 —— 不再单列一个 "bootloader" 项（那是同一个东西） */
+        pm.getMenu().add(0, 7, 3, R.string.power_fastboot);
+        /* 骁龙 9008（EDL 紧急下载模式） */
+        pm.getMenu().add(0, 6, 4, R.string.power_edl);
+        /* 关机放最后 */
+        pm.getMenu().add(0, 5, 5, R.string.power_shutdown);
+        pm.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(android.view.MenuItem item) {
+                confirmPower(item.getItemId(), item.getTitle().toString());
+                return true;
+            }
+        });
+        pm.show();
+    }
+
+    private void confirmPower(final int id, final String title) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(getString(R.string.confirm_power_msg, title,
+                        rootSource == null ? getString(R.string.root_detecting) : rootSource.label))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.run, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        doPower(id, title);
+                    }
+                })
+                .show();
+    }
+
+    private void doPower(final int id, final String title) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String cmd;
+                switch (id) {
+                    case 1:
+                        cmd = "reboot";
+                        break;
+                    case 2:
+                        cmd = "setprop ctl.restart zygote";
+                        break;
+                    case 3:
+                        cmd = "reboot recovery";
+                        break;
+                    case 4:
+                        cmd = "reboot bootloader";
+                        break;
+                    case 5:
+                        cmd = "reboot -p";
+                        break;
+                    case 6:
+                        /* 骁龙 9008（EDL 紧急下载模式） */
+                        cmd = "reboot edl";
+                        break;
+                    case 7:
+                        /* Fastboot（引导模式） */
+                        cmd = "reboot bootloader";
+                        break;
+                    default:
+                        return;
+                }
+                /*
+                 * ★ 用我们自己的 su，不走 RootSource.execSu ★
+                 *
+                 * 之前报「需要 root 权限」，原因是 RootSource 找的是 /system/bin/su ——
+                 * 这台设备根本没这个文件（我们的 su 在 /data/local/tmp/umbral/su）。
+                 * SuBridge.root 直接 exec 我们的 su 二进制，
+                 * 由它写 /proc/umbral/escape 提权，这条链是通的。
+                 */
+                String out = null;
+                try {
+                    io.umbral.sk.SuBridge.R r =
+                            io.umbral.sk.SuBridge.root(cmd + " && echo POWOK", 15000);
+                    out = r.out;
+                } catch (Throwable t) {
+                    out = null;
+                }
+                final boolean ok = out != null && out.contains("POWOK");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!ok) {
+                            Toast.makeText(MainActivity.this,
+                                    getString(R.string.toast_exec_failed), Toast.LENGTH_SHORT).show();
+                        }
+                        // 成功的话设备会立刻重启，不用提示
+                    }
+                });
+            }
+        }).start();
+    }
+
+    // ================= root 来源 =================
+
+    private void detectRootSource() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final RootSource rs = RootSource.detect();
+                rootSource = rs;
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        renderRootSource();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void renderRootSource() {
+        if (tvHomeRootSource == null) {
+            return;
+        }
+        RootSource rs = rootSource;
+        if (rs == null) {
+            tvHomeRootSource.setText(R.string.root_detecting);
+            tvHomeRootSource.setBackgroundResource(R.drawable.bg_chip);
+            tvHomeRootSource.setTextColor(Ui.tc(this, R.attr.sk_chip_text));
+            return;
+        }
+
+        if (rs.isOwned()) {
+            tvHomeRootSource.setText(R.string.root_sk);
+            tvHomeRootSource.setBackgroundResource(R.drawable.bg_chip_owned);
+            tvHomeRootSource.setTextColor(Ui.tc(this, R.attr.sk_success));
+        } else if (rs.isBorrowed()) {
+            tvHomeRootSource.setText(rs.label);
+            tvHomeRootSource.setBackgroundResource(R.drawable.bg_chip_borrowed);
+            tvHomeRootSource.setTextColor(0xFFFF9800);
+        } else {
+            tvHomeRootSource.setText(R.string.root_none);
+            tvHomeRootSource.setBackgroundResource(R.drawable.bg_chip);
+            tvHomeRootSource.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+        }
+    }
+
+    // ================= Home =================
+
+    private void initHomePage() {
+        tvHomeVersion = pageHome.findViewById(R.id.tv_home_version);
+        tvHomeState = pageHome.findViewById(R.id.tv_home_state);
+        tvHomeFlashHint = pageHome.findViewById(R.id.tv_home_flash_hint);
+        pageHome.findViewById(R.id.card_umbral).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,
+                        io.umbral.flash.FlashActivity.class));
+            }
+        });
+        ivHomeStatusIcon = pageHome.findViewById(R.id.iv_home_status_icon);
+        tvDevKernel = pageHome.findViewById(R.id.tv_dev_kernel);
+        tvHomeMode = pageHome.findViewById(R.id.tv_home_mode);
+        tvHomeRootSource = pageHome.findViewById(R.id.tv_home_root_source);
+        tvStatApps = pageHome.findViewById(R.id.tv_stat_apps);
+        tvStatModules = pageHome.findViewById(R.id.tv_stat_modules);
+        tvDevModel = pageHome.findViewById(R.id.tv_dev_model);
+        tvDevAndroid = pageHome.findViewById(R.id.tv_dev_android);
+        tvDevArch = pageHome.findViewById(R.id.tv_dev_arch);
+        tvDevSelinux = pageHome.findViewById(R.id.tv_dev_selinux);
+        tvHomeKmiSupport = pageHome.findViewById(R.id.tv_home_kmi_support);
+        tvHomeKmiHint = pageHome.findViewById(R.id.tv_home_kmi_hint);
+
+        pageHome.findViewById(R.id.row_reconnect).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SkBridge.invalidate();
+                refreshAll();
+                reloadModules();
+                detectRootSource();
+                Toast.makeText(MainActivity.this, R.string.toast_redetecting, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        pageHome.findViewById(R.id.row_root_source).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                detectRootSource();
+                Toast.makeText(MainActivity.this, R.string.toast_detect_again, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        /*
+         * 点「内核状态」那一块进影子权限页。
+         *
+         * 为什么不放底部导航：底部已经五个标签（主页/超级用户/模块/KPM/设置），
+         * 再加会挤。而这一页是从「内核状态」自然延伸出去的下一层，
+         * 挂在状态区下面点击最符合直觉。
+         */
+        View.OnClickListener openShadow = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, ShadowActivity.class));
+            }
+        };
+        if (tvHomeKmiSupport != null) {
+            tvHomeKmiSupport.setOnClickListener(openShadow);
+        }
+        if (tvHomeKmiHint != null) {
+            tvHomeKmiHint.setOnClickListener(openShadow);
+        }
+
+        View intro = pageSuperuser.findViewById(R.id.card_shadow_intro);
+        if (intro != null) {
+            intro.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showShadowIntro();
+                }
+            });
+        }
+
+
+
+        refreshHome();
+        renderRootSource();
+    }
+
+    private void refreshHome() {
+        if (tvHomeVersion == null) {
+            return;
+        }
+        boolean connected = SkBridge.isConnected();
+
+        // 状态：已刷入 / 未刷入
+        tvHomeState.setText(connected ? R.string.home_flashed : R.string.home_not_flashed);
+        tvHomeState.setTextColor(Ui.tc(this, connected ? R.attr.sk_success : R.attr.sk_error));
+
+        // 图标：勾 / 叉
+        ivHomeStatusIcon.setImageResource(
+                connected ? R.drawable.ic_status_check : R.drawable.ic_status_cross);
+        ivHomeStatusIcon.setImageTintList(android.content.res.ColorStateList.valueOf(
+                Ui.tc(this, connected ? R.attr.sk_success : R.attr.sk_on_surface_variant)));
+
+        // 版本：管理器版本
+        tvHomeVersion.setText(getString(R.string.home_version, SkBridge.MANAGER_VERSION));
+
+        // 未刷入时显示"点击此刷入"
+        if (tvHomeFlashHint != null) {
+            tvHomeFlashHint.setVisibility(connected ? View.GONE : View.VISIBLE);
+        }
+
+        // 内核：完整显示在设备信息区
+        if (tvDevKernel != null) {
+            tvDevKernel.setText(SkBridge.kernelVersion());
+        }
+
+        tvHomeMode.setText(SkBridge.modeLabel(this));
+        tvStatApps.setText(String.valueOf(AppRepository.grantedCount(this)));
+        tvStatModules.setText(String.valueOf(ModuleRepository.lastCount()));
+        tvDevModel.setText(SkBridge.deviceModel());
+        tvDevAndroid.setText("Android " + SkBridge.androidVersion()
+                + " (SDK " + SkBridge.sdkInt() + ")");
+        tvDevArch.setText(SkBridge.arch());
+        tvDevSelinux.setText(SkBridge.selinuxMode());
+
+        renderKmiSupport();
+    }
+
+    /**
+     * 显示 KMI 支持情况。
+     *
+     * 逻辑：本机 KMI（如 android15-6.6）→ 查 APK 里有没有对应模块
+     *   有  → 绿色「已支持 · android15-6.6」
+     *   没有 → 红色「您的设备暂时不支持 影核」+ 说明文字
+     *
+     * 为什么必须这样：内核模块必须和内核精确匹配（struct module 布局、
+     * CFI 类型哈希、CRC）。塞一个不匹配的模块进去，内核在 finit_module
+     * 时直接 panic，表现为「logo 一闪就没、无限重启」。所以宁可只用
+     * init 包装器（系统能启动、没有 root 能力），也绝不注入错模块。
+     */
+    private void renderKmiSupport() {
+        if (tvHomeKmiSupport == null) return;
+
+        // ── 已刷入：显示模块版本 + 实际用的 hook 后端 + 运行统计 ──
+        //
+        // 后端为什么必须显示出来：不同设备内核能用的 hook 通道不一样，
+        // 模块启动时按 A→B→C 降级。用户看到 kprobe:syscall-entry 就知道
+        // 自己落在最差的兜底路径上（全部 syscall 提权，有性能损耗）。
+        boolean connected = SkBridge.isConnected();
+        if (connected) {
+            String ver = SkBridge.version();
+            String be = SkBridge.backend();
+
+            tvHomeKmiSupport.setVisibility(View.VISIBLE);
+            tvHomeKmiSupport.setText(getString(R.string.home_enabled_kernel, ver));
+            tvHomeKmiSupport.setTextColor(Ui.tc(this, R.attr.sk_success));
+
+            if (tvHomeKmiHint == null) return;
+
+            long[] st = SkBridge.stats();
+            StringBuilder sb = new StringBuilder();
+            sb.append("影子权限后端：").append(be);
+            if (SkBridge.backendIsDegraded()) {
+                sb.append("\n降级模式：所有 syscall 都提权，性能有损耗");
+            }
+            sb.append("\n提权 ").append(st[1]).append(" 次 / 还原 ").append(st[2]).append(" 次");
+
+            if (SkBridge.credLeaked()) {
+                /*
+             * 这里原来会警告「提权与还原次数不一致 = cred 计数异常」，是误报，已移除：
+             *   超级用户模式的设计就是 commit_creds 后**不还原**（进程永久 uid 0），
+             *   影子模式则根本不做提权，只改判定结果。
+             *   两种模式都不需要「提权/还原」配平，用这个判据报警必然误伤。
+             * 计数留着当参考信息，不做判断。
+             */
+                tvHomeKmiHint.setTextColor(Ui.tc(this, R.attr.sk_error));
+            } else {
+                tvHomeKmiHint.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+            }
+
+            tvHomeKmiHint.setVisibility(View.VISIBLE);
+            tvHomeKmiHint.setText(sb.toString());
+            return;
+        }
+
+        // ── 未刷入：按内核编号（KMI）判定这台设备能不能用 ──
+        //
+        // 判定基准是内核，不是机型 —— 模块能不能加载只取决于
+        // struct module 布局 / kCFI / 符号 CRC，这三样都由内核决定。
+        // 同一机型换个系统版本，内核就变了，支持状态也跟着变。
+        ModuleRepo.Support sup = ModuleRepo.support(this);
+
+        tvHomeKmiSupport.setVisibility(View.VISIBLE);
+        tvHomeKmiSupport.setText(sup.describe(this));
+
+        if (sup.supported) {
+            tvHomeKmiSupport.setTextColor(Ui.tc(this, R.attr.sk_success));
+        } else if (sup.baseKmi == null) {
+            tvHomeKmiSupport.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+        } else {
+            tvHomeKmiSupport.setTextColor(Ui.tc(this, R.attr.sk_error));
+        }
+
+        if (tvHomeKmiHint == null) return;
+
+        String detail = sup.detail(this);
+        if (detail == null) {
+            tvHomeKmiHint.setVisibility(View.GONE);
+        } else {
+            tvHomeKmiHint.setVisibility(View.VISIBLE);
+            tvHomeKmiHint.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+            tvHomeKmiHint.setText(detail);
+        }
+    }
+
+    // ================= Superuser =================
+
+    private void initSuperuserPage() {
+        lvSuperuser = pageSuperuser.findViewById(R.id.lv_superuser);
+        tvEmptySuperuser = pageSuperuser.findViewById(R.id.tv_empty_superuser);
+        etSearch = pageSuperuser.findViewById(R.id.et_search);
+        btnClearSearch = pageSuperuser.findViewById(R.id.btn_clear_search);
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int st, int c, int a) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                keyword = s.toString();
+                btnClearSearch.setVisibility(keyword.isEmpty() ? View.GONE : View.VISIBLE);
+                applyFilter();
+            }
+        });
+
+        btnClearSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                etSearch.setText("");
+            }
+        });
+
+        reloadApps();
+    }
+
+    private void reloadApps() {
+        Trace.step(this, "reloadApps:begin");
+        allApps = AppRepository.listAll(this);
+        Trace.step(this, "reloadApps:listed");
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        if (lvSuperuser == null) {
+            return;
+        }
+        Trace.step(this, "applyFilter:begin");
+        List<AppEntry> shown = AppRepository.filter(allApps, keyword);
+        Trace.step(this, "applyFilter:filtered n=" + shown.size());
+
+        appAdapter = new AppAdapter(this, shown, new AppAdapter.OnOpenListener() {
+            @Override
+            public void onOpen(AppEntry e) {
+                Intent i = new Intent(MainActivity.this, AppDetailActivity.class);
+                i.putExtra(AppDetailActivity.EXTRA_PKG, e.packageName);
+                startActivityForResult(i, REQ_APP_DETAIL);
+            }
+        });
+        Trace.step(this, "applyFilter:adapterBuilt");
+        lvSuperuser.setAdapter(appAdapter);
+        Trace.step(this, "applyFilter:adapterSet");
+
+        boolean empty = shown.isEmpty();
+        if (empty) {
+            tvEmptySuperuser.setText(keyword.isEmpty()
+                    ? R.string.no_superuser
+                    : R.string.no_result);
+        }
+        tvEmptySuperuser.setVisibility(empty ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * 超级用户页的搜索 + 授权列表。
+     *
+     * 和影子用户页的区别只有一处：这里的「已授权」只认 super 模式。
+     * 同一个应用可以同时被两页看到，但两页拨的不是同一个开关。
+     */
+    private void initRootUserPage() {
+        if (pageRootuser == null) {
+            return;
+        }
+        lvRootuser = pageRootuser.findViewById(R.id.lv_rootuser);
+        tvEmptyRootuser = pageRootuser.findViewById(R.id.tv_empty_rootuser);
+        etSearchRoot = pageRootuser.findViewById(R.id.et_search_root);
+        btnClearSearchRoot = pageRootuser.findViewById(R.id.btn_clear_search_root);
+
+        if (etSearchRoot != null) {
+            etSearchRoot.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int st, int c, int a) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int st, int b, int c) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    rootKeyword = s.toString();
+                    if (btnClearSearchRoot != null) {
+                        btnClearSearchRoot.setVisibility(
+                                rootKeyword.isEmpty() ? View.GONE : View.VISIBLE);
+                    }
+                    applyRootFilter();
+                }
+            });
+        }
+
+        if (btnClearSearchRoot != null) {
+            btnClearSearchRoot.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (etSearchRoot != null) {
+                        etSearchRoot.setText("");
+                    }
+                }
+            });
+        }
+
+        reloadRootApps();
+    }
+
+    private void reloadRootApps() {
+        rootApps = AppRepository.listAll(this);
+        applyRootFilter();
+    }
+
+    private void applyRootFilter() {
+        if (lvRootuser == null) {
+            return;
+        }
+        List<AppEntry> shown = AppRepository.filter(rootApps, rootKeyword);
+
+        /*
+         * 只把 super 模式显示成「已授权」。
+         * AppRepository 里的 granted 是「有任意授权」，这里按页面语义重算。
+         */
+        for (AppEntry e : shown) {
+            e.granted = (e.grantMode == io.umbral.sk.ModuleControl.MODE_SUPER);
+        }
+
+        rootAdapter = new AppAdapter(this, shown, new AppAdapter.OnOpenListener() {
+            @Override
+            public void onOpen(AppEntry e) {
+                Intent i = new Intent(MainActivity.this, AppDetailActivity.class);
+                i.putExtra(AppDetailActivity.EXTRA_PKG, e.packageName);
+                startActivityForResult(i, REQ_APP_DETAIL);
+            }
+        });
+        lvRootuser.setAdapter(rootAdapter);
+
+        boolean empty = shown.isEmpty();
+        if (tvEmptyRootuser != null) {
+            if (empty) {
+                tvEmptyRootuser.setText(rootKeyword.isEmpty()
+                        ? R.string.no_rootuser_apps
+                        : R.string.no_result);
+            }
+            tvEmptyRootuser.setVisibility(empty ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    // ================= Modules =================
+
+    private void initModulesPage() {
+        lvModules = pageModules.findViewById(R.id.lv_modules);
+        tvEmptyModules = pageModules.findViewById(R.id.tv_empty_modules);
+
+        pageModules.findViewById(R.id.fab_install).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickModuleFile();
+            }
+        });
+
+        reloadModules();
+    }
+
+    private void reloadModules() {
+        if (modulesLoading) {
+            return;
+        }
+        modulesLoading = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final List<ModuleEntry> mods = ModuleRepository.listAll(MainActivity.this);
+                ModuleRepository.setLastCount(mods.size());
+                if (isFinishing() || isDestroyed()) {
+                    modulesLoading = false;
+                    return;
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        modulesLoading = false;
+                        bindModules(mods);
+                        refreshHome();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void bindModules(List<ModuleEntry> mods) {
+        moduleAdapter = new ModuleAdapter(this, mods, new ModuleAdapter.OnToggleListener() {
+            @Override
+            public void onToggle(ModuleEntry e, final boolean enabled) {
+                final ModuleEntry target = e;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final String err = ModuleRepository.setEnabled(target, enabled);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (err != null) {
+                                    Toast.makeText(MainActivity.this,
+                                            getString(R.string.toast_switch_failed, String.valueOf(err)), Toast.LENGTH_SHORT).show();
+                                    if (moduleAdapter != null) {
+                                        moduleAdapter.notifyDataSetChanged();
+                                    }
+                                } else {
+                                    target.enabled = enabled;
+                                    /*
+                                     * 明确告诉用户「什么时候生效」——
+                                     * 模块脚本是开机时由模块引擎执行的，所以
+                                     * 启用/禁用都要等下一次重启才真正落地。
+                                     */
+                                    Toast.makeText(MainActivity.this,
+                                            enabled ? "已启用，将在设备重启后生效"
+                                                    : "已禁用，将在设备重启后生效",
+                                            Toast.LENGTH_LONG).show();
+                                    if (moduleAdapter != null) {
+                                        moduleAdapter.notifyDataSetChanged();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }).start();
+            }
+        }, new ModuleAdapter.OnRemoveListener() {
+            @Override
+            public void onRemove(final ModuleEntry e) {
+                /* 卸载是不可逆的（ksud 打 remove 标记，下次开机真删），必须二次确认 */
+                new UmbralDialog(MainActivity.this)
+                        .title(getString(R.string.mod_remove_title, e.name))
+                        .body(getString(R.string.mod_remove_msg))
+                        .negative(getString(R.string.cancel), null)
+                        .positive(getString(R.string.mod_remove), new Runnable() {
+                            @Override
+                            public void run() {
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        final String err = ModuleRepository.uninstall(e);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (err != null) {
+                                                    Toast.makeText(MainActivity.this,
+                                                            getString(R.string.mod_remove_failed,
+                                                                    String.valueOf(err)),
+                                                            Toast.LENGTH_LONG).show();
+                                                } else {
+                                                    Toast.makeText(MainActivity.this,
+                                                            getString(R.string.mod_remove_ok, e.name),
+                                                            Toast.LENGTH_SHORT).show();
+                                                    reloadModules();
+                                                }
+                                            }
+                                        });
+                                    }
+                                }).start();
+                            }
+                        })
+                        .show();
+            }
+        });
+        lvModules.setAdapter(moduleAdapter);
+        tvEmptyModules.setVisibility(mods.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    // ================= KPM =================
+
+    private void initKpmPage() {
+        lvKpm = pageKpm.findViewById(R.id.lv_kpm);
+        tvEmptyKpm = pageKpm.findViewById(R.id.tv_empty_kpm);
+        tvKpmEngineState = pageKpm.findViewById(R.id.tv_kpm_engine_state);
+        tvKpmEngineDesc = pageKpm.findViewById(R.id.tv_kpm_engine_desc);
+
+        pageKpm.findViewById(R.id.fab_kpm).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickKpmFile();
+            }
+        });
+
+        reloadKpm();
+    }
+
+    // ══════════════════ UM 页 ══════════════════
+
+    private void initUmPage() {
+        lvUm = pageUm.findViewById(R.id.lv_um);
+        tvUmEmpty = pageUm.findViewById(R.id.tv_um_empty);
+
+        /* 介绍卡片：默认收起，点一下展开 */
+        final TextView introBody = pageUm.findViewById(R.id.tv_um_intro_body);
+        final TextView introMore = pageUm.findViewById(R.id.btn_um_intro_more);
+        introMore.setOnClickListener(new View.OnClickListener() {
+            private boolean expanded;
+
+            @Override
+            public void onClick(View v) {
+                expanded = !expanded;
+                introBody.setText(expanded ? R.string.um_intro_full : R.string.um_intro_body);
+                introMore.setText(expanded ? R.string.um_intro_collapse : R.string.um_intro_more);
+            }
+        });
+
+        pageUm.findViewById(R.id.btn_um_repo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new android.content.Intent(MainActivity.this, UmRepoActivity.class));
+            }
+        });
+
+        pageUm.findViewById(R.id.btn_um_import).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickUm();
+            }
+        });
+
+        umAdapter = new io.umbral.adapter.UmAdapter(this, umItems);
+        lvUm.setAdapter(umAdapter);
+        lvUm.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> p, View v, int pos, long id) {
+                applyUm(pos);
+            }
+        });
+        lvUm.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> p, View v, int pos, long id) {
+                deleteUm(pos);
+                return true;
+            }
+        });
+
+        reloadUm();
+    }
+
+    /**
+     * UM 模板库 —— 选模板 → 选目标应用 → 自动算 dev/ino 并下发。
+     *
+     * 为什么要模板：手写规则要查 uid、查 dev/ino、拼格式，普通用户做不来。
+     */
+    /** 用自建列表弹窗（UmbralDialog 没有列表 API，用 content 塞一个竖直布局） */
+    private void umPickList(String title, final String[] names, final UmPick cb) {
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, 0, pad, 0);
+
+        final UmbralDialog[] dlg = new UmbralDialog[1];
+        for (int i = 0; i < names.length; i++) {
+            final int idx = i;
+            TextView tv = new TextView(this);
+            tv.setText(names[i]);
+            tv.setTextSize(13);
+            tv.setPadding(0, pad, 0, pad);
+            tv.setTextColor(io.umbral.util.Ui.tc(this, R.attr.sk_on_surface));
+            tv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (dlg[0] != null) {
+                        dlg[0].dismiss();
+                    }
+                    cb.onPick(idx);
+                }
+            });
+            box.addView(tv);
+        }
+        dlg[0] = new UmbralDialog(this).title(title).content(box)
+                .negative(getString(R.string.cancel), null);
+        dlg[0].show();
+    }
+
+    /** 列表选择回调 */
+    private interface UmPick {
+        void onPick(int idx);
+    }
+
+    private void showUmTemplates() {
+        final java.util.List<io.umbral.um.UmTemplates.Tpl> tpls =
+                io.umbral.um.UmTemplates.all();
+        String[] names = new String[tpls.size()];
+        for (int i = 0; i < tpls.size(); i++) {
+            names[i] = tpls.get(i).name + "\n" + tpls.get(i).desc;
+        }
+        umPickList(getString(R.string.um_tpl_pick), names, new UmPick() {
+            @Override
+            public void onPick(int idx) {
+                pickUmTemplateTarget(tpls.get(idx));
+            }
+        });
+    }
+
+    private void pickUmTemplateTarget(final io.umbral.um.UmTemplates.Tpl t) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final java.util.List<io.umbral.data.AppEntry> apps =
+                        io.umbral.data.AppRepository.listAll(MainActivity.this);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String[] names = new String[apps.size()];
+                        for (int i = 0; i < apps.size(); i++) {
+                            names[i] = apps.get(i).label + "  (uid " + apps.get(i).uid + ")";
+                        }
+                        umPickList(getString(R.string.um_tpl_target), names, new UmPick() {
+                            @Override
+                            public void onPick(int idx) {
+                                applyUmTemplate(t, apps.get(idx).uid);
+                            }
+                        });
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void applyUmTemplate(final io.umbral.um.UmTemplates.Tpl t, final int uid) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                java.util.List<String> rules = io.umbral.um.UmTemplates.buildRules(uid, t);
+                int ok = 0;
+                for (String line : rules) {
+                    if (io.umbral.sk.Shell.writeProc("/proc/umbral/um",
+                            io.umbral.um.UmTemplates.toBare(line))) {
+                        ok++;
+                    }
+                }
+                final int n = ok;
+                final String note = t.note;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (n == 0) {
+                            Toast.makeText(MainActivity.this, R.string.um_tpl_none,
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        new UmbralDialog(MainActivity.this)
+                                .title(getString(R.string.um_tpl_done, n))
+                                .body(note)
+                                .negative(getString(R.string.cancel), null)
+                                .show();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void reloadUm() {
+        if (umLoading || lvUm == null) {
+            return;
+        }
+        umLoading = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final java.util.List<io.umbral.um.UmRepository.Item> got =
+                        io.umbral.um.UmRepository.listAll(MainActivity.this);
+                if (isFinishing() || isDestroyed()) {
+                    umLoading = false;
+                    return;
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        umLoading = false;
+                        umItems.clear();
+                        umItems.addAll(got);
+                        umAdapter.notifyDataSetChanged();
+                        boolean empty = umItems.isEmpty();
+                        tvUmEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+                        lvUm.setVisibility(empty ? View.GONE : View.VISIBLE);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void pickUm() {
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        try {
+            startActivityForResult(Intent.createChooser(i, getString(R.string.um_import)), REQ_UM_PICK);
+        } catch (Exception e) {
+            Toast.makeText(this, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** 处理 UM 导入返回 */
+    private void onUmPicked(Intent data) {
+        if (data == null || data.getData() == null) {
+            return;
+        }
+        android.net.Uri uri = data.getData();
+        String name = null;
+        android.database.Cursor c = null;
+        try {
+            c = getContentResolver().query(uri,
+                    new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null);
+            if (c != null && c.moveToFirst()) {
+                name = c.getString(0);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (c != null) {
+                c.close();
+            }
+        }
+        if (name == null) {
+            name = uri.getLastPathSegment();
+        }
+        java.io.InputStream in = null;
+        try {
+            in = getContentResolver().openInputStream(uri);
+            byte[] raw = io.umbral.um.UmRepository.readAll(in);
+            String id = io.umbral.um.UmRepository.importBytes(this, raw, name);
+            Toast.makeText(this, getString(R.string.um_import_ok, id), Toast.LENGTH_SHORT).show();
+            reloadUm();
+        } catch (io.umbral.um.UmModule.UmException e) {
+            Toast.makeText(this, getString(R.string.um_import_fail, e.getMessage()), Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.um_import_fail, String.valueOf(e.getMessage())), Toast.LENGTH_LONG).show();
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    /**
+     * 点 UM 模块：先给两个选择
+     *   ① 重新应用（把规则重新下发到内核）
+     *   ② 修改生效应用（换一批应用，立刻重下发）
+     */
+    private void applyUm(final int pos) {
+        if (pos < 0 || pos >= umItems.size()) {
+            return;
+        }
+        final io.umbral.um.UmRepository.Item it = umItems.get(pos);
+        final int[] apps = io.umbral.um.UmRepository.appsOf(it);
+
+        new UmbralDialog(this)
+                .title(it.id)
+                .body("已对 " + apps.length + " 个应用生效。\n\n"
+                        + "· 重新应用：把这份规则再下发一次\n"
+                        + "· 修改生效应用：换一批应用，改完立即生效")
+                .negative("重新应用", new Runnable() {
+                    @Override
+                    public void run() {
+                        final String err = io.umbral.um.UmRepository.apply(it);
+                        Toast.makeText(MainActivity.this,
+                                err == null ? "已重新下发" : ("失败：" + err),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .positive("修改生效应用", new Runnable() {
+                    @Override
+                    public void run() {
+                        editUmApps(it);
+                    }
+                })
+                .show();
+    }
+
+    /** 打开 UM 仓库页，带上「编辑模式」参数：预选原来的应用，应用后删掉旧模块 */
+    private void editUmApps(io.umbral.um.UmRepository.Item it) {
+        String nm = it.id;
+        int us = nm.lastIndexOf('_');
+        if (us > 0) {
+            nm = nm.substring(0, us);
+        }
+        android.content.Intent i = new android.content.Intent(this, UmRepoActivity.class);
+        i.putExtra("edit_name", nm);
+        i.putExtra("edit_item", it.id);
+        startActivity(i);
+    }
+
+    private void deleteUm(int pos) {
+        if (pos < 0 || pos >= umItems.size()) {
+            return;
+        }
+        final io.umbral.um.UmRepository.Item it = umItems.get(pos);
+        new UmbralDialog(this)
+                .title(getString(R.string.um_delete_title, it.id))
+                .body(getString(R.string.um_delete_msg))
+                .negative(getString(R.string.cancel), null)
+                .positive(getString(R.string.um_delete), new Runnable() {
+                    @Override
+                    public void run() {
+                        if (new java.io.File(it.path).delete()) {
+                            reloadUm();
+                        } else {
+                            Toast.makeText(MainActivity.this, R.string.um_delete_fail,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .show();
+    }
+
+    private void reloadKpm() {
+        if (kpmLoading) {
+            return;
+        }
+        kpmLoading = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final boolean ready = KpmRepository.isEngineReady();
+                final String desc = KpmRepository.engineDesc();
+                final List<KpmEntry> kpms = KpmRepository.listAll(MainActivity.this);
+                if (isFinishing() || isDestroyed()) {
+                    kpmLoading = false;
+                    return;
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        kpmLoading = false;
+                        bindEngineState(ready, desc);
+                        bindKpm(kpms);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void bindEngineState(boolean ready, String desc) {
+        if (tvKpmEngineState == null) {
+            return;
+        }
+        tvKpmEngineState.setText(ready ? R.string.kpm_ready : R.string.kpm_not_ready);
+        tvKpmEngineState.setTextColor(Ui.tc(this, ready ? R.attr.sk_success : R.attr.sk_on_surface_variant));
+        tvKpmEngineState.setBackgroundResource(ready ? R.drawable.bg_chip_owned : R.drawable.bg_chip);
+        if (tvKpmEngineDesc != null) {
+            tvKpmEngineDesc.setText(desc);
+        }
+    }
+
+    private void bindKpm(List<KpmEntry> kpms) {
+        kpmAdapter = new KpmAdapter(this, kpms, new KpmAdapter.OnActionListener() {
+            @Override
+            public void onAction(KpmEntry e) {
+                toggleKpm(e);
+            }
+        });
+        lvKpm.setAdapter(kpmAdapter);
+        tvEmptyKpm.setVisibility(kpms.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void toggleKpm(final KpmEntry e) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String err = e.loaded
+                        ? KpmRepository.unload(e)
+                        : KpmRepository.load(e);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (err != null) {
+                            Toast.makeText(MainActivity.this, err, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        e.loaded = !e.loaded;
+                        kpmAdapter.notifyDataSetChanged();
+                        Toast.makeText(MainActivity.this,
+                                e.loaded ? "已加载 " + e.name : "已卸载 " + e.name,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    // ================= 文件选择器 =================
+
+    private void pickModuleFile() {
+        startPick("*/*", REQ_PICK_MODULE, "选择模块包");
+    }
+
+    private void pickKpmFile() {
+        startPick("*/*", REQ_PICK_KPM, "选择 KPM 文件");
+    }
+
+    private void startPick(String mime, int reqCode, String chooserTitle) {
+        Intent base = new Intent(Intent.ACTION_GET_CONTENT);
+        base.addCategory(Intent.CATEGORY_OPENABLE);
+        base.setType(mime);
+        base.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/octet-stream"
+        });
+
+        PackageManager pm = getPackageManager();
+
+        for (String pkg : PREFERRED_PICKERS) {
+            if (!isInstalled(pkg)) {
+                continue;
+            }
+            Intent mt = new Intent(base);
+            mt.setPackage(pkg);
+            if (mt.resolveActivity(pm) != null) {
+                Toast.makeText(this, R.string.toast_via_mt, Toast.LENGTH_SHORT).show();
+                try {
+                    startActivityForResult(mt, reqCode);
+                    return;
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        Intent saf = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        saf.addCategory(Intent.CATEGORY_OPENABLE);
+        saf.setType(mime);
+        saf.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/octet-stream"
+        });
+        if (saf.resolveActivity(pm) != null) {
+            try {
+                startActivityForResult(saf, reqCode);
+                return;
+            } catch (Exception ignored) {
+            }
+        }
+
+        try {
+            startActivityForResult(Intent.createChooser(base, chooserTitle), reqCode);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.toast_no_picker, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean isInstalled(String pkg) {
+        try {
+            getPackageManager().getPackageInfo(pkg, 0);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_UM_PICK) {
+            if (resultCode == RESULT_OK) {
+                onUmPicked(data);
+            }
+            return;
+        }
+
+        if (requestCode == REQ_APP_DETAIL) {
+            reloadApps();
+            refreshHome();
+            return;
+        }
+
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        if (requestCode == REQ_PICK_MODULE) {
+            handlePickedModule(data.getData());
+        } else if (requestCode == REQ_PICK_KPM) {
+            handlePickedKpm(data.getData());
+        } else if (requestCode == REQ_PICK_LAUNCH) {
+            handlePickedLauncher(data.getData());
+        }
+    }
+
+    /** 选中的是 .kpm / .zip，读出名字和大小后提示 */
+    private void handlePickedKpm(final Uri uri) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String name = null;
+                long size = 0;
+                String err = null;
+                InputStream in = null;
+                try {
+                    in = getContentResolver().openInputStream(uri);
+                    if (in == null) {
+                        throw new Exception("无法打开文件");
+                    }
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        size += len;
+                    }
+                } catch (Exception e) {
+                    err = e.getMessage();
+                } finally {
+                    try {
+                        if (in != null) {
+                            in.close();
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                String seg = uri.getLastPathSegment();
+                if (seg != null) {
+                    int i = seg.lastIndexOf('/');
+                    name = i >= 0 ? seg.substring(i + 1) : seg;
+                }
+                final String fName = name == null ? "unknown" : name;
+                final long fSize = size;
+                final String fErr = err;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fErr != null) {
+                            Toast.makeText(MainActivity.this,
+                                    getString(R.string.toast_read_failed, String.valueOf(fErr)), Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle(R.string.kpm_preview)
+                                .setMessage(getString(R.string.label_file, fName)
+                                        + "\n大小：" + KpmEntry.humanSize(fSize)
+                                        + "\n\n引擎：" + KpmRepository.engineDesc()
+                                        + "\n\n安装需要 KernelPatch 引擎就绪"
+                                        + "（当前：" + (KpmRepository.isEngineReady() ? "就绪" : "未就绪") + "）")
+                                .setNegativeButton(R.string.cancel, null)
+                                .setPositiveButton(R.string.install, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface d, int which) {
+                                        Toast.makeText(MainActivity.this,
+                                                getString(R.string.toast_kpm_pending), Toast.LENGTH_SHORT).show();
+                                    }
+                                })
+                                .show();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * 选中的 ZIP 模块 —— 真安装，不是预览。
+     *
+     * 流程：
+     *   ① 把 content:// 内容复制成一个真实文件（我们自己的安装器要路径）
+     *   ② 交给 ModuleInstaller（自己解压写 /data/adb/modules，不靠 ksud）
+     *   ③ 报结果 + 刷新列表
+     */
+    private void handlePickedModule(final Uri uri) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String[] msg = new String[1];
+                java.io.File tmp = new java.io.File(getCacheDir(),
+                        "picked_" + System.currentTimeMillis() + ".zip");
+                java.io.InputStream in = null;
+                java.io.FileOutputStream fo = null;
+                try {
+                    in = getContentResolver().openInputStream(uri);
+                    if (in == null) {
+                        throw new Exception("无法打开文件");
+                    }
+                    fo = new java.io.FileOutputStream(tmp);
+                    byte[] buf = new byte[65536];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        fo.write(buf, 0, len);
+                    }
+                    fo.flush();
+                } catch (Exception e) {
+                    msg[0] = "读取失败：" + e.getMessage();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, msg[0], Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    return;
+                } finally {
+                    try {
+                        if (in != null) in.close();
+                        if (fo != null) fo.close();
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                /*
+                 * ★ 安装过程全部进日志页 ★
+                 *
+                 * 以前只弹一个 Toast：长文本被截断、消失就没了，
+                 * 用户既看不到完整错误，也没法复制。
+                 * 现在每一条都写进 InstallLogActivity，可滚动、可复制、可存文件。
+                 */
+                /*
+                 * ★ 全屏刷入进度：进度条 + 实时日志 ★
+                 * 这是用户要的「大屏进度条 + 上面显示刷入日志」。
+                 */
+                /*
+                 * ★ 对话框必须在主线程创建 ★
+                 *
+                 * new Dialog() / new ProgressBar() 都是 View 操作，
+                 * 在子线程里做会直接崩掉整个进程（实测一装就崩）。
+                 * 所以：主线程建 + show，用 latch 等它就绪，子线程只写日志。
+                 */
+                final io.umbral.InstallProgressDialog[] pgRef =
+                        new io.umbral.InstallProgressDialog[1];
+                final java.util.concurrent.CountDownLatch latch =
+                        new java.util.concurrent.CountDownLatch(1);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            pgRef[0] = new io.umbral.InstallProgressDialog(
+                                    MainActivity.this, "刷入模块", 6);
+                            pgRef[0].show();
+                        } catch (Throwable t) {
+                            android.util.Log.w("umbral", "progress dialog failed", t);
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+                });
+                try {
+                    latch.await(3, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (Throwable ignored) {
+                }
+                final io.umbral.InstallProgressDialog pg = pgRef[0];
+                if (pg == null) {
+                    /* 界面起不来也不能让安装流程挂掉，退化成无界面安装 */
+                    return;
+                }
+
+                pg.step(1, "压缩包：" + tmp.getName() + "（" + tmp.length() + " 字节）");
+                pg.step(2, "XZ 解码器：" + (io.umbral.module.XzDecoder.available()
+                        ? "可用" : "不可用（只支持 Deflate）"));
+
+                io.umbral.module.ModuleInstaller.Result r =
+                        io.umbral.module.ModuleInstaller.install(MainActivity.this,
+                                tmp.getAbsolutePath());
+                pg.step(3, "解析 + 解压 + 写入模块目录");
+                if (r.ok) {
+                    pg.step(4, "模块 id：" + r.id + "，名称：" + r.name);
+                    pg.step(5, "默认启用 + 标记「待重启」（与 Magisk/KernelSU 一致）");
+                    try {
+                        java.io.File mdir = new java.io.File("/data/adb/modules", r.id);
+                        /* 新装模块默认启用：删掉可能存在的 disable 标记 */
+                        java.io.File dis = new java.io.File(mdir, "disable");
+                        if (dis.exists()) {
+                            //noinspection ResultOfMethodCallIgnored
+                            dis.delete();
+                            pg.log("已删除 disable 标记（默认启用）");
+                        }
+                        //noinspection ResultOfMethodCallIgnored
+                        new java.io.File(mdir, ".pending_reboot").createNewFile();
+                    } catch (Throwable ignored) {
+                    }
+                    /* ★ customize.sh：Magisk 在安装最后一步执行它 ★ */
+                    try {
+                        java.io.File cz = new java.io.File(
+                                new java.io.File("/data/adb/modules", r.id), "customize.sh");
+                        if (cz.exists()) {
+                            pg.log("执行 customize.sh …");
+                            io.umbral.sk.SuBridge.R cr =
+                                    io.umbral.sk.SuBridge.root(
+                                            "cd /data/adb/modules/" + r.id
+                                            + " && export MODPATH=/data/adb/modules/" + r.id
+                                            + " MODID=" + r.id + " KSU=true"
+                                            + " MAGISK_VER=27.0 MAGISK_VER_CODE=27000"
+                                            + " PATH=/data/local/tmp/umbral/bin:$PATH"
+                                            + " && /system/bin/sh customize.sh 2>&1");
+                            if (cr.out != null && !cr.out.isEmpty()) {
+                                for (String ln : cr.out.split("\n")) {
+                                    pg.log("   | " + ln);
+                                }
+                            }
+                            pg.log("customize.sh exit=" + cr.code);
+                        } else {
+                            pg.log("没有 customize.sh，跳过");
+                        }
+                    } catch (Throwable t) {
+                        pg.log("customize.sh 异常：" + t);
+                    }
+                    pg.step(6, "完成");
+                }
+
+                if (!r.ok) {
+                    try {
+                        java.io.File keep = new java.io.File(getExternalFilesDir(null),
+                                "last_failed.zip");
+                        java.io.FileInputStream inK = new java.io.FileInputStream(tmp);
+                        java.io.FileOutputStream outK = new java.io.FileOutputStream(keep);
+                        byte[] bufK = new byte[64 * 1024];
+                        int nK;
+                        while ((nK = inK.read(bufK)) > 0) {
+                            outK.write(bufK, 0, nK);
+                        }
+                        outK.flush();
+                        outK.getFD().sync();
+                        outK.close();
+                        inK.close();
+                    } catch (Throwable ignored) {
+                    }
+                }
+
+                //noinspection ResultOfMethodCallIgnored
+                tmp.delete();
+
+                final String logPath;
+                {
+                    String pth = null;
+                    try {
+                        java.io.File dir = getExternalFilesDir(null);
+                        java.io.File lf = new java.io.File(dir,
+                                "install_" + System.currentTimeMillis() + ".txt");
+                        java.io.FileOutputStream lfo = new java.io.FileOutputStream(lf);
+                        lfo.write(pg.dump().getBytes("UTF-8"));
+                        lfo.flush();
+                        lfo.getFD().sync();
+                        lfo.close();
+                        pth = lf.getAbsolutePath();
+                    } catch (Throwable t) {
+                        pth = null;
+                    }
+                    logPath = pth;
+                }
+
+                pg.log("日志文件：" + (logPath == null ? "（保存失败）" : logPath));
+                pg.finish(r.ok, r.summary());
+
+                final boolean okk = r.ok;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (okk) {
+                            reloadModules();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+
+    private void showModulePreview(String name, String version, String author, String desc) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("名称：").append(name).append('\n');
+        if (version != null && !version.isEmpty()) {
+            sb.append("版本：").append(version).append('\n');
+        }
+        if (author != null && !author.isEmpty()) {
+            sb.append("作者：").append(author).append('\n');
+        }
+        if (desc != null && !desc.isEmpty()) {
+            sb.append("说明：").append(desc).append('\n');
+        }
+        sb.append('\n').append("安装需要内核侧授权（当前：")
+                .append(SkBridge.modeLabel(this)).append("）");
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.module_preview)
+                .setMessage(sb.toString())
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.install, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        Toast.makeText(MainActivity.this,
+                                getString(R.string.toast_kernel_pending), Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+    }
+
+    // ================= 三点菜单 / 关于 =================
+
+    private void showMoreMenu(View anchor) {
+                PopupMenu pm = new PopupMenu(this, anchor);
+        pm.getMenu().add(0, 100, 0, R.string.about);
+        pm.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(android.view.MenuItem item) {
+                if (item.getItemId() == 100) {
+                    showAboutDialog();
+                    return true;
+                }
+                return false;
+            }
+        });
+        pm.show();
+    }
+
+    /** 当前内核后端是否为影子模式（只有它要求提权/还原配平） */
+    private boolean skShadowMode() {
+        try {
+            /* LKA 后端 = 影子模式（kretprobe 放行，身份不变） */
+            return io.umbral.sk.SkBridge.mode() == io.umbral.sk.SkBridge.MODE_LKA;
+        } catch (Throwable t) {
+            return true;        /* 判不出来就按影子处理，宁可多报 */
+        }
+    }
+
+    /**
+     * 导出诊断日志。
+     *
+     * 在后台线程收集（要读 /proc、要跑 shell），完成后弹窗告诉路径并可直接分享。
+     * 报告内容全部中文，读不到的项会写明原因。
+     */
+    /** 系统守护告警：强制回主页 + 弹窗列出肇事进程 */
+    private final io.umbral.sk.GuardMonitor.Listener guardListener =
+            new io.umbral.sk.GuardMonitor.Listener() {
+                @Override
+                public void onIntrusion(io.umbral.sk.Guard.State st) {
+                    showGuardAlert(st);
+                }
+            };
+
+    private void showGuardAlert(io.umbral.sk.Guard.State st) {
+        /* 强制跳回主页 —— 让用户立刻看到告警 */
+        try {
+            selectTab(TAB_HOME);
+        } catch (Throwable ignored) {
+        }
+
+        StringBuilder b = new StringBuilder();
+        b.append(getString(R.string.guard_alert_body));
+        int n = 0;
+        for (io.umbral.sk.Guard.Offender o : st.hits) {
+            if (n >= 8) {
+                b.append("…");
+                break;
+            }
+            String label = (o.label == null || o.label.isEmpty()) ? "未知进程" : o.label;
+            String pkg = (o.pkg == null || o.pkg.isEmpty()) ? ("uid " + o.uid) : o.pkg;
+            b.append("· ").append(label).append("\n")
+             .append("    ").append(pkg).append("\n")
+             .append("    uid ").append(o.uid)
+             .append(" · pid ").append(o.pid)
+             .append(" · 尝试 ").append(o.count).append(" 次\n");
+            n++;
+        }
+
+        new UmbralDialog(this)
+                .title(getString(R.string.guard_alert_title))
+                .body(b.toString())
+                .negative(getString(R.string.guard_alert_clear), new Runnable() {
+                    @Override
+                    public void run() {
+                        io.umbral.sk.Guard.clear();
+                    }
+                })
+                .positive(getString(R.string.guard_alert_ok), null)
+                .show();
+    }
+
+    private void exportLogs() {
+        Toast.makeText(this, R.string.export_log_running, Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final io.umbral.util.LogExporter.Out r =
+                        io.umbral.util.LogExporter.export(MainActivity.this);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (r == null || !r.ok()) {
+                            Toast.makeText(MainActivity.this, R.string.export_log_fail,
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        new UmbralDialog(MainActivity.this)
+                                .title(getString(R.string.export_log_done))
+                                .body("文件位置：\n" + r.displayPath
+                                        + "\n\n" + getString(R.string.export_log_hint))
+                                .negative(getString(R.string.cancel), null)
+                                .positive(getString(R.string.export_log_share), new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        io.umbral.util.LogExporter.share(MainActivity.this, r);
+                                    }
+                                })
+                                .show();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void showAboutDialog() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("影核 ").append(SkBridge.MANAGER_VERSION).append("\n\n");
+        sb.append("内核：").append(SkBridge.kernelVersion()).append('\n');
+        sb.append("内核状态：").append(SkBridge.modeLabel(this)).append('\n');
+        sb.append("root 来源：")
+                .append(rootSource == null ? "检测中" : rootSource.label).append('\n');
+        sb.append("Android：").append(SkBridge.androidVersion())
+                .append("（SDK ").append(SkBridge.sdkInt()).append("）\n");
+        sb.append("架构：").append(SkBridge.arch()).append('\n');
+        sb.append("SELinux：").append(SkBridge.selinuxMode()).append("\n\n");
+        sb.append("影核 · 影子权限\nGPL-2.0");
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.about)
+                .setMessage(sb.toString())
+                .setPositiveButton(R.string.ok, null)
+                .show();
+    }
+
+    // ================= 设置（第 5 个 tab） =================
+
+    private String[] modeLabels() {
+        return new String[]{
+                getString(R.string.grant_ask),
+                getString(R.string.grant_deny),
+                getString(R.string.grant_once)};
+    }
+    private String[] modeDescs() {
+        return new String[]{
+                getString(R.string.grant_ask_desc),
+                getString(R.string.grant_deny_desc),
+                getString(R.string.grant_once_desc)};
+    }
+
+    private void initSettingsPage() {
+        final SharedPreferences prefs = getSharedPreferences("sk_settings", MODE_PRIVATE);
+
+        // 语言（放最前，它影响本页所有文字）
+        final TextView langValue = pageSettings.findViewById(R.id.tv_language_value);
+        langValue.setText(LocaleHelper.label(this, LocaleHelper.index(this)));
+        /* ★ Vivo / iQOO 反 root 对抗：只在检测到对应机型时出现 ★ */
+        try {
+            final android.view.View vivoRow = pageSettings.findViewById(R.id.row_vivo_guard);
+            final android.widget.Switch vivoSw = pageSettings.findViewById(R.id.sw_vivo_guard);
+            final TextView vivoDesc = pageSettings.findViewById(R.id.tv_vivo_desc);
+            final boolean isVivo = io.umbral.sk.VivoGuard.isVivoFamily();
+            if (vivoRow != null) {
+                vivoRow.setVisibility(isVivo ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            if (isVivo) {
+                String fam = io.umbral.sk.VivoGuard.familyName();
+                if (vivoDesc != null) {
+                    vivoDesc.setText("检测到 " + fam
+                            + "：开启后，系统安全中心将看不到 su / Magisk / 模块 / 影核的痕迹");
+                }
+                if (vivoSw != null) {
+                    boolean on = io.umbral.sk.VivoGuard.enabled(this);
+                    vivoSw.setChecked(on);
+                    vivoSw.setOnCheckedChangeListener(
+                            new android.widget.CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(android.widget.CompoundButton b, boolean v) {
+                            io.umbral.sk.VivoGuard.setEnabled(MainActivity.this, v);
+                            Toast.makeText(MainActivity.this,
+                                    v ? "反 root 对抗已开启" : "反 root 对抗已关闭",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("umbral", "vivo guard init failed", t);
+        }
+
+        /* ★ 启动器执行身份：点一下循环切换 ★ */
+        try {
+            final android.view.View rowLm = pageSettings.findViewById(R.id.row_launcher_mode);
+            final TextView tvLm = pageSettings.findViewById(R.id.tv_launcher_mode_value);
+            final String[] MODES = {"shadow", "super", "full"};
+            final String[] LABELS = {"影子用户", "超级用户", "完全影子"};
+            if (tvLm != null) {
+                String cur = prefs.getString("launcher_mode", "shadow");
+                for (int i = 0; i < MODES.length; i++) {
+                    if (MODES[i].equals(cur)) {
+                        tvLm.setText(LABELS[i]);
+                        break;
+                    }
+                }
+            }
+            if (rowLm != null) {
+                rowLm.setOnClickListener(new android.view.View.OnClickListener() {
+                    @Override
+                    public void onClick(android.view.View v) {
+                        String cur = prefs.getString("launcher_mode", "shadow");
+                        int idx = 0;
+                        for (int i = 0; i < MODES.length; i++) {
+                            if (MODES[i].equals(cur)) {
+                                idx = i;
+                                break;
+                            }
+                        }
+                        idx = (idx + 1) % MODES.length;
+                        prefs.edit().putString("launcher_mode", MODES[idx]).apply();
+                        if (tvLm != null) {
+                            tvLm.setText(LABELS[idx]);
+                        }
+                        Toast.makeText(MainActivity.this,
+                                "启动器执行身份：" + LABELS[idx], Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("umbral", "launcher mode init failed", t);
+        }
+
+        io.umbral.module.XzDecoder.attach(this);
+        io.umbral.module.ZipSelfTest.run(this);
+        io.umbral.sk.SuCompat.ensure(this);
+        io.umbral.sk.SuCompat.installShims(this);
+        io.umbral.sk.SignatureCheck.record(this);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    io.umbral.sk.GrantsPersist.sync();
+                } catch (Throwable ignored) {
+                }
+            }
+        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    io.umbral.sk.Daemon.start();
+                } catch (Throwable ignored) {
+                }
+            }
+        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    io.umbral.module.ModuleRunner.runOnce(MainActivity.this);
+                } catch (Throwable ignored) {
+                }
+            }
+        }).start();
+        io.umbral.module.SuProbe.run(this);
+
+        /*
+         * 自检落盘：XZ 解码器到底能不能用。
+         * 我没法从 adb 读 App 私有目录，所以让它自己写一份到外部目录。
+         */
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    java.io.File f = new java.io.File(getExternalFilesDir(null), "xz_status.txt");
+                    java.io.FileOutputStream fo = new java.io.FileOutputStream(f);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("XZ 解码器: ").append(
+                            io.umbral.module.XzDecoder.available() ? "可用" : "不可用").append('\n');
+                    java.io.File so = new java.io.File(getFilesDir(), "libumbral_xz.so");
+                    sb.append("so 副本: ").append(so.exists() ? so.length() + " 字节" : "不存在").append('\n');
+                    try {
+                        android.content.pm.ApplicationInfo ai = getApplicationInfo();
+                        sb.append("extractNativeLibs: (skip)\n");
+                        sb.append("nativeLibraryDir: ").append(ai.nativeLibraryDir).append('\n');
+                        java.io.File[] libs = new java.io.File(ai.nativeLibraryDir).listFiles();
+                        sb.append("lib 目录条目: ").append(libs == null ? "null" : libs.length).append('\n');
+                        if (libs != null) {
+                            for (java.io.File l : libs) {
+                                sb.append("  ").append(l.getName()).append("  ")
+                                  .append(l.length()).append('\n');
+                            }
+                        }
+                    } catch (Throwable t) {
+                        sb.append("ApplicationInfo: ").append(t).append('\n');
+                    }
+                    fo.write(sb.toString().getBytes("UTF-8"));
+                    fo.flush();
+                    fo.getFD().sync();
+                    fo.close();
+                } catch (Throwable ignored) {
+                }
+            }
+        }).start();
+
+
+        /* 守卫开关：整块包异常保护，绝不让它把 App 拖崩 */
+        try {
+            /* 完全影子开关：打开后授权页多出第三个选项，并展开说明卡片 */
+        try {
+            final android.widget.Switch swFull =
+                    pageSettings.findViewById(R.id.sw_full_shadow);
+            final android.view.View card = pageSettings.findViewById(R.id.tv_full_shadow_card);
+            if (swFull != null) {
+                boolean on = prefs.getBoolean("full_shadow_enabled", false);
+                swFull.setChecked(on);
+                if (card != null) {
+                    card.setVisibility(on ? android.view.View.VISIBLE : android.view.View.GONE);
+                }
+                swFull.setOnCheckedChangeListener(
+                        new android.widget.CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(android.widget.CompoundButton b, boolean v) {
+                        prefs.edit().putBoolean("full_shadow_enabled", v).apply();
+                        if (card != null) {
+                            card.setVisibility(v ? android.view.View.VISIBLE
+                                                 : android.view.View.GONE);
+                        }
+                    }
+                });
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("umbral", "full shadow init failed", t);
+        }
+
+        final android.widget.Switch swGuard = pageSettings.findViewById(R.id.sw_guard);
+            if (swGuard == null) {
+                /* 布局里没有这个控件就别继续，绝不能 NPE 让整个 App 起不来 */
+                android.util.Log.w("umbral", "sw_guard not found, skip guard binding");
+                return;
+            }
+            swGuard.setChecked(prefs.getBoolean("guard_on", false));
+            if (swGuard.isChecked()) {
+                io.umbral.sk.GuardMonitor.start(this, guardListener);
+            }
+            swGuard.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                    boolean ok = io.umbral.sk.Guard.setEnabled(on);
+                    if (!ok) {
+                        Toast.makeText(MainActivity.this, R.string.guard_unsupported,
+                                Toast.LENGTH_LONG).show();
+                        if (on) {
+                            b.setChecked(false);
+                        }
+                        return;
+                    }
+                    prefs.edit().putBoolean("guard_on", on).apply();
+                    Toast.makeText(MainActivity.this,
+                            on ? R.string.guard_on : R.string.guard_off, Toast.LENGTH_SHORT).show();
+                    if (on) {
+                        io.umbral.sk.GuardMonitor.start(MainActivity.this, guardListener);
+                    } else {
+                        io.umbral.sk.GuardMonitor.stop();
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            android.util.Log.w("umbral", "guard switch init failed", t);
+        }
+
+        findViewById(R.id.row_export_log).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                exportLogs();
+            }
+        });
+findViewById(R.id.row_language).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(R.string.settings_language)
+                        .setSingleChoiceItems(
+                                LocaleHelper.allLabels(MainActivity.this),
+                                LocaleHelper.index(MainActivity.this),
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface d, int which) {
+                                        LocaleHelper.setIndex(MainActivity.this, which);
+                                        d.dismiss();
+                                        recreate();
+                                    }
+                                })
+                        .show();
+            }
+        });
+
+        // 配色
+        final TextView themeValue = pageSettings.findViewById(R.id.tv_theme_value);
+        themeValue.setText(ThemeManager.name(this));
+        pageSettings.findViewById(R.id.row_theme).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(R.string.theme_picker_title)
+                        .setSingleChoiceItems(ThemeManager.names(MainActivity.this), ThemeManager.get(MainActivity.this),
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface d, int which) {
+                                        ThemeManager.set(MainActivity.this, which);
+                                        d.dismiss();
+                                        recreate();
+                                    }
+                                })
+                        .show();
+            }
+        });
+
+        // 默认授权行为
+        final TextView modeBtn = pageSettings.findViewById(R.id.btn_default_mode);
+        final TextView modeDesc = pageSettings.findViewById(R.id.tv_default_mode_desc);
+        int mode = prefs.getInt("default_mode", 0);
+        modeBtn.setText(modeLabels()[mode]);
+        modeDesc.setText(modeDescs()[mode]);
+        modeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(R.string.mode_picker_title)
+                        .setSingleChoiceItems(modeLabels(), prefs.getInt("default_mode", 0),
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface d, int which) {
+                                        prefs.edit().putInt("default_mode", which).apply();
+                                        modeBtn.setText(modeLabels()[which]);
+                                        modeDesc.setText(modeDescs()[which]);
+                                        d.dismiss();
+                                    }
+                                })
+                        .show();
+            }
+        });
+
+        // 三个开关
+        bindSwitch(pageSettings, R.id.sw_notify, "notify", true, prefs);
+        bindSwitch(pageSettings, R.id.sw_hide, "hide", true, prefs);
+
+        /*
+         * 启动器开关。
+         *
+         * 不用 bindSwitch：它的值存在 "sk_settings" 里，而启动器开关要
+         * 影响导航栏可见性，并且首次引导弹窗也会写它，所以统一走
+         * launcherEnabled()/setLauncherEnabled() 这一对方法，
+         * 避免两处各存一份导致状态打架。
+         */
+        final Switch swLauncher = pageSettings.findViewById(R.id.sw_launcher);
+        if (swLauncher != null) {
+            swLauncher.setChecked(launcherEnabled());
+            swLauncher.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton b, boolean checked) {
+                    setLauncherEnabled(checked);
+                }
+            });
+        }
+
+        // 撤销全部
+        pageSettings.findViewById(R.id.row_revoke_all).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(R.string.settings_revoke_all)
+                        .setMessage(R.string.revoke_all_msg)
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.revoke, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int which) {
+                                AppRepository.revokeAll(MainActivity.this);
+                                reloadApps();
+                                refreshHome();
+                                Toast.makeText(MainActivity.this,
+                                        getString(R.string.toast_revoked_all), Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .show();
+            }
+        });
+    }
+
+    private void bindSwitch(View root, int id, final String key, boolean def,
+                            final SharedPreferences prefs) {
+        Switch sw = root.findViewById(id);
+        sw.setChecked(prefs.getBoolean(key, def));
+        sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton b, boolean checked) {
+                prefs.edit().putBoolean(key, checked).apply();
+            }
+        });
+    }
+
+    /** 首次进入的浮层提示：告诉他点卡片刷入 */
+    private void showFirstRunTip() {
+        final android.content.SharedPreferences sp =
+                getSharedPreferences("sk_settings", MODE_PRIVATE);
+        if (sp.getBoolean("shown_flash_tip", false)) {
+            return;
+        }
+        sp.edit().putBoolean("shown_flash_tip", true).apply();
+
+        final android.view.ViewGroup root =
+                (android.view.ViewGroup) findViewById(android.R.id.content);
+        final android.view.View tip = getLayoutInflater().inflate(
+                R.layout.view_flash_tip, root, false);
+
+        android.widget.FrameLayout.LayoutParams lp =
+                new android.widget.FrameLayout.LayoutParams(
+                        android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+        lp.gravity = android.view.Gravity.BOTTOM;
+        float d = getResources().getDisplayMetrics().density;
+        lp.bottomMargin = (int) (92 * d);
+        lp.leftMargin = (int) (16 * d);
+        lp.rightMargin = (int) (16 * d);
+        root.addView(tip, lp);
+
+        tip.setAlpha(0f);
+        tip.animate().alpha(1f).setDuration(280).start();
+
+        tip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismissTip(root, tip);
+            }
+        });
+
+        tip.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                dismissTip(root, tip);
+            }
+        }, 6000);
+    }
+
+    private void dismissTip(final android.view.ViewGroup root, final android.view.View tip) {
+        if (tip.getParent() == null) {
+            return;
+        }
+        tip.animate().alpha(0f).setDuration(300).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                if (tip.getParent() != null) {
+                    root.removeView(tip);
+                }
+            }
+        }).start();
+    }
+
+    private void refreshAll() {
+        refreshHome();
+    }
+
+    // ================= 导航 =================
+
+    private void initLauncherPage() {
+        lvLauncher = pageLauncher.findViewById(R.id.lv_launcher);
+        tvEmptyLauncher = pageLauncher.findViewById(R.id.tv_empty_launcher);
+        btnLauncherPick = pageLauncher.findViewById(R.id.btn_launcher_pick);
+        btnLauncherMt = pageLauncher.findViewById(R.id.btn_launcher_mt);
+
+        launcherRoot = io.umbral.launcher.LauncherStore.dir(this);
+
+        // 显示文件实际存放位置，让用户知道副本在哪
+        TextView path = pageLauncher.findViewById(R.id.tv_launcher_path);
+        if (path != null && launcherRoot != null) {
+            path.setText(launcherRoot.getAbsolutePath());
+        }
+
+        if (btnLauncherPick != null) {
+            btnLauncherPick.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    pickLauncherFile();
+                }
+            });
+        }
+
+        if (btnLauncherMt != null) {
+            if (isMtInstalled()) {
+                btnLauncherMt.setVisibility(View.VISIBLE);
+                btnLauncherMt.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openMtManager();
+                    }
+                });
+            } else {
+                btnLauncherMt.setVisibility(View.GONE);
+            }
+        }
+
+        reloadLauncher();
+    }
+
+    private boolean isMtInstalled() {
+        try {
+            getPackageManager().getPackageInfo("bin.mt.plus", 0);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void openMtManager() {
+        try {
+            Intent i = getPackageManager().getLaunchIntentForPackage("bin.mt.plus");
+            if (i != null) {
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            } else {
+                Toast.makeText(this, R.string.launcher_no_mt, Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.launcher_no_mt, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void initNav() {
+        findViewById(R.id.tab_home).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_HOME);
+            }
+        });
+        findViewById(R.id.tab_superuser).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_SUPERUSER);
+            }
+        });
+        findViewById(R.id.tab_modules).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_MODULES);
+            }
+        });
+        findViewById(R.id.tab_kpm).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_KPM);
+            }
+        });
+        findViewById(R.id.tab_um).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_UM);
+            }
+        });
+        findViewById(R.id.tab_settings).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_SETTINGS);
+            }
+        });
+        findViewById(R.id.tab_launcher).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectTab(TAB_LAUNCHER);
+            }
+        });
+            }
+
+    private void selectTab(int tab) {
+        currentTab = tab;
+
+        pageHome.setVisibility(tab == TAB_HOME ? View.VISIBLE : View.GONE);
+        pageSuperuser.setVisibility(tab == TAB_SUPERUSER ? View.VISIBLE : View.GONE);
+        pageModules.setVisibility(tab == TAB_MODULES ? View.VISIBLE : View.GONE);
+        pageKpm.setVisibility(tab == TAB_KPM ? View.VISIBLE : View.GONE);
+        pageSettings.setVisibility(tab == TAB_SETTINGS ? View.VISIBLE : View.GONE);
+        pageLauncher.setVisibility(tab == TAB_LAUNCHER ? View.VISIBLE : View.GONE);
+        pageUm.setVisibility(tab == TAB_UM ? View.VISIBLE : View.GONE);
+
+        switch (tab) {
+            case TAB_HOME:
+                appBarTitle.setText(R.string.tab_home);
+                refreshHome();
+                renderRootSource();
+                break;
+            case TAB_SUPERUSER:
+                appBarTitle.setText(R.string.tab_shadow);
+                renderModuleStatus();
+                reloadApps();
+                break;
+            case TAB_MODULES:
+                appBarTitle.setText(R.string.modules);
+                reloadModules();
+                break;
+            case TAB_KPM:
+                appBarTitle.setText(R.string.kpm_title);
+                reloadKpm();
+                break;
+            case TAB_LAUNCHER:
+                appBarTitle.setText(R.string.launcher_title);
+                reloadLauncher();
+                break;
+            case TAB_UM:
+                appBarTitle.setText(R.string.um_title);
+                reloadUm();
+                break;
+                        case TAB_SETTINGS:
+                appBarTitle.setText(R.string.settings);
+                TextView tv = pageSettings.findViewById(R.id.tv_theme_value);
+                if (tv != null) {
+                    tv.setText(ThemeManager.name(this));
+                }
+                break;
+            default:
+                break;
+        }
+
+        styleNavItem(R.id.ind_home, R.id.icon_home, R.id.label_home, tab == TAB_HOME);
+        styleNavItem(R.id.ind_superuser, R.id.icon_superuser, R.id.label_superuser, tab == TAB_SUPERUSER);
+        styleNavItem(R.id.ind_modules, R.id.icon_modules, R.id.label_modules, tab == TAB_MODULES);
+        styleNavItem(R.id.ind_kpm, R.id.icon_kpm, R.id.label_kpm, tab == TAB_KPM);
+        styleNavItem(R.id.ind_settings, R.id.icon_settings, R.id.label_settings, tab == TAB_SETTINGS);
+        styleNavItem(R.id.ind_launcher, R.id.icon_launcher, R.id.label_launcher, tab == TAB_LAUNCHER);
+    }
+
+
+    // ══════════════════════════════════════════════════════
+    // 启动器：可见性 / 首次引导 / 列表 / 选择 / 执行
+    // ══════════════════════════════════════════════════════
+
+    private boolean launcherEnabled() {
+        return getSharedPreferences("umbral", MODE_PRIVATE)
+                .getBoolean(PREF_LAUNCHER, false);
+    }
+
+    private void setLauncherEnabled(boolean on) {
+        getSharedPreferences("umbral", MODE_PRIVATE)
+                .edit().putBoolean(PREF_LAUNCHER, on).apply();
+        applyLauncherVisibility();
+    }
+
+    /**
+     * 启动器标签的显示与否。
+     *
+     * 关掉的时候如果正停在启动器页，要退回主页 —— 否则会出现
+     * 「页面还在显示、标签已经消失」的错位状态。
+     */
+    private void applyLauncherVisibility() {
+        boolean on = launcherEnabled();
+        View tab = findViewById(R.id.tab_launcher);
+        if (tab != null) {
+            tab.setVisibility(on ? View.VISIBLE : View.GONE);
+        }
+        if (!on && currentTab == TAB_LAUNCHER) {
+            selectTab(TAB_HOME);
+        }
+    }
+
+    /** 首次启动：欢迎 → 询问是否启用启动器。只走一次。 */
+    private void showWelcomeThenAsk() {
+        SharedPreferences sp = getSharedPreferences("umbral", MODE_PRIVATE);
+        if (sp.getBoolean(PREF_WELCOMED, false)) {
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.welcome_title)
+                .setMessage(R.string.welcome_body)
+                .setCancelable(false)
+                .setPositiveButton(R.string.welcome_start, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        askEnableLauncher();
+                    }
+                })
+                .show();
+        sp.edit().putBoolean(PREF_WELCOMED, true).apply();
+    }
+
+    private void askEnableLauncher() {
+        SharedPreferences sp = getSharedPreferences("umbral", MODE_PRIVATE);
+        if (sp.getBoolean(PREF_ASKED_LAUNCHER, false)) {
+            return;
+        }
+        sp.edit().putBoolean(PREF_ASKED_LAUNCHER, true).apply();
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_prompt_title)
+                .setMessage(R.string.launcher_prompt_body)
+                .setPositiveButton(R.string.launcher_prompt_yes,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int w) {
+                                setLauncherEnabled(true);
+                                selectTab(TAB_LAUNCHER);
+                            }
+                        })
+                .setNegativeButton(R.string.launcher_prompt_no, null)
+                .show();
+    }
+
+    private void reloadLauncher() {
+        if (lvLauncher == null) {
+            return;
+        }
+        java.util.List<java.io.File> files =
+                io.umbral.launcher.LauncherStore.list(this);
+
+        launcherAdapter = new FileAdapter(this, files,
+                new FileAdapter.OnOpen() {
+                    @Override
+                    public void open(java.io.File f) {
+                        runLauncherFile(f);
+                    }
+                },
+                new FileAdapter.OnRun() {
+                    @Override
+                    public void run(java.io.File f) {
+                        runLauncherFile(f);
+                    }
+                },
+                new FileAdapter.OnMenu() {
+                    @Override
+                    public void menu(java.io.File f, View anchor) {
+                        showLauncherMenu(f, anchor);
+                    }
+                });
+        lvLauncher.setAdapter(launcherAdapter);
+
+        boolean empty = files.isEmpty();
+        if (tvEmptyLauncher != null) {
+            tvEmptyLauncher.setText(R.string.launcher_dir_empty);
+            tvEmptyLauncher.setVisibility(empty ? View.VISIBLE : View.GONE);
+        }
+        lvLauncher.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    /** 点条目：目录进目录，可执行直接跑，文本进编辑器 */
+    private void openEntry(java.io.File f) {
+        // 纯列表模式下点条目 = 执行
+        if (f != null && f.isFile()) {
+            runLauncherFile(f);
+        }
+    }
+
+    /** 进目录，读不到就提示（常见于没权限的系统目录） */
+    private void enterDir(java.io.File d) {
+        // 已改回纯脚本列表，不再支持目录跳转
+        reloadLauncher();
+    }
+
+    /** 打开编辑器 */
+    private void editFile(java.io.File f) {
+        Intent i = new Intent(this, LauncherEditorActivity.class);
+        i.putExtra(LauncherEditorActivity.EXTRA_PATH, f.getAbsolutePath());
+        startActivity(i);
+    }
+
+    /** 新建文件夹 */
+    private void showMkdirDialog() {
+        // 已改回纯脚本列表，不再支持新建目录
+        Toast.makeText(this, R.string.launcher_mkdir_fail, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 选文件。
+     *
+     * 装了 MT 管理器就默认走 MT —— 但要说清楚：MT 管理器不能像系统文件选择器
+     * 那样把选中的文件「返回」给我们，它只能把文件**分享**出来。
+     * 所以 MT 那条路是：打开 MT → 长按文件 → 分享 → 影核（我们注册了 ACTION_SEND）。
+     * 系统选择器那条路才是能直接拿到 Uri 的。
+     *
+     * 两条都给，默认高亮 MT，符合「装了 MT 就默认用它」的要求。
+     */
+    private void pickLauncherFile() {
+        if (!isMtInstalled()) {
+            pickLauncherViaSystem();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_choose_way)
+                .setItems(new CharSequence[]{
+                        getString(R.string.launcher_pick_mt),
+                        getString(R.string.launcher_pick_sys)
+                }, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        if (which == 0) {
+                            openMtManager();
+                            Toast.makeText(MainActivity.this,
+                                    R.string.launcher_share_hint, Toast.LENGTH_LONG).show();
+                        } else {
+                            pickLauncherViaSystem();
+                        }
+                    }
+                })
+                .show();
+    }
+
+    private void pickLauncherViaSystem() {
+        Intent base = new Intent(Intent.ACTION_GET_CONTENT);
+        base.addCategory(Intent.CATEGORY_OPENABLE);
+        // 只收 .sh / .ko：用一组精确 MIME，比 */* 更可能让选择器少显示无关文件
+        base.setType("*/*");
+        base.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                "application/x-sh",
+                "text/x-sh",
+                "text/plain",
+                "application/octet-stream"
+        });
+        try {
+            startActivityForResult(
+                    Intent.createChooser(base, getString(R.string.launcher_pick)),
+                    REQ_PICK_LAUNCH);
+        } catch (Exception e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** 只接受 .sh / .ko，其余一律拒绝并说明原因 */
+    private boolean isLauncherFile(String name) {
+        if (name == null) {
+            return false;
+        }
+        String n = name.toLowerCase();
+        return n.endsWith(".sh") || n.endsWith(".ko");
+    }
+
+    private void handlePickedLauncher(final Uri uri) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String seg = uri.getLastPathSegment();
+                String name = null;
+                if (seg != null) {
+                    int i = seg.lastIndexOf('/');
+                    name = i >= 0 ? seg.substring(i + 1) : seg;
+                }
+                if (!isLauncherFile(name)) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this,
+                                    R.string.launcher_only_shko, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    return;
+                }
+                final java.io.File f = io.umbral.launcher.LauncherStore
+                        .importUri(MainActivity.this, uri, name);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (f == null) {
+                            Toast.makeText(MainActivity.this,
+                                    R.string.launcher_run_fail, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this,
+                                    R.string.launcher_added, Toast.LENGTH_SHORT).show();
+                            reloadLauncher();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /** 每项的 ⋮ 菜单：权限 / 重命名 / 查看 / 复制路径 / 移除 */
+    private void showLauncherMenu(final java.io.File f, View anchor) {
+        PopupMenu pm = new PopupMenu(this, anchor);
+        int id = 1;
+        final int ID_PERM = id++;
+        final int ID_EDIT = id++;
+        final int ID_RENAME = id++;
+        final int ID_PATH = id++;
+        final int ID_DEL = id++;
+        final int ID_RUNMODE = id++;
+
+        if (!f.isDirectory()) {
+            pm.getMenu().add(0, ID_PERM, 0, R.string.launcher_menu_perm);
+            if (io.umbral.launcher.LauncherStore.isTextFile(f)) {
+                pm.getMenu().add(0, ID_EDIT, 1, R.string.launcher_menu_edit);
+            }
+        }
+        pm.getMenu().add(0, ID_RENAME, 2, R.string.launcher_menu_rename);
+        pm.getMenu().add(0, ID_PATH, 3, R.string.launcher_menu_path);
+        pm.getMenu().add(0, ID_RUNMODE, 4, R.string.run_mode_reset);
+        pm.getMenu().add(0, ID_DEL, 5, R.string.launcher_menu_remove);
+
+        pm.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(android.view.MenuItem item) {
+                int i = item.getItemId();
+                if (i == ID_PERM) {
+                    PermDialog.show(MainActivity.this, f, new PermDialog.OnApplied() {
+                        @Override
+                        public void applied(java.io.File file, boolean ok) {
+                            reloadLauncher();
+                        }
+                    });
+                    return true;
+                }
+                if (i == ID_EDIT) {
+                    editFile(f);
+                    return true;
+                }
+                if (i == ID_RENAME) {
+                    showRenameDialog(f);
+                    return true;
+                }
+                if (i == ID_PATH) {
+                    copyLauncherPath(f);
+                    return true;
+                }
+                if (i == ID_RUNMODE) {
+                    forgetExecMode();
+                    runLauncherFile(f);
+                    return true;
+                }
+                if (i == ID_DEL) {
+                    confirmRemoveLauncher(f);
+                    return true;
+                }
+                return false;
+            }
+        });
+        pm.show();
+    }
+
+    /**
+     * 权限对话框。
+     *
+     * 用「常用组合 + 当前值」而不是九个复选框：
+     *   这些文件都在应用私有目录，实际只有属主会访问，
+     *   给 700/755/644/600 几个常用档位比让人一位一位勾更实用。
+     */
+    private void showPermDialog(final java.io.File f) {
+        // 已由 PermDialog（MT 风格九宫格）取代，保留空壳只为兼容旧调用
+        PermDialog.show(this, f, null);
+    }
+
+    private void showRenameDialog(final java.io.File f) {
+        final EditText et = new EditText(this);
+        et.setText(f.getName());
+        et.setSelection(f.getName().length());
+        et.setSingleLine(true);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_menu_rename)
+                .setView(et)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        String nn = et.getText() == null ? "" : et.getText().toString().trim();
+                        java.io.File dst = io.umbral.launcher.LauncherStore.rename(f, nn);
+                        Toast.makeText(MainActivity.this,
+                                dst != null ? getString(R.string.launcher_renamed)
+                                            : getString(R.string.launcher_rename_fail),
+                                Toast.LENGTH_SHORT).show();
+                        reloadLauncher();
+                    }
+                })
+                .show();
+    }
+
+    /** 查看脚本内容 —— 相当于一个极简的文本查看器 */
+    private void showContentDialog(java.io.File f) {
+        // 查看已升级为编辑，跳独立页面
+        editFile(f);
+    }
+
+    private void copyLauncherPath(java.io.File f) {
+        android.content.ClipboardManager cm =
+                (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (cm != null) {
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                    "umbral_path", f.getAbsolutePath()));
+            Toast.makeText(this, R.string.launcher_path_copied, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void confirmRemoveLauncher(final java.io.File f) {
+        new AlertDialog.Builder(this)
+                .setTitle(f.getName())
+                .setMessage(getString(R.string.launcher_delete_confirm, f.getName()))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.launcher_menu_remove,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int w) {
+                                io.umbral.launcher.LauncherStore.deleteDeep(f);
+                                reloadLauncher();
+                            }
+                        })
+                .show();
+    }
+
+    /**
+     * 执行文件 —— 直接进内置终端。
+     *
+     * 不再「跑完弹个结果框」：脚本常常边跑边提示（按 1 / 按 y），
+     * 必须让用户在它运行期间就能回话，所以执行和交互都在终端页里。
+     */
+    /**
+     * 点脚本 → 先问用普通权限还是 root，再进终端。
+     *
+     * 为什么要问：同一个脚本两种身份跑出来结果完全不同
+     * （能不能读 /data 就是分水岭）。默认每次都问，
+     * 用户勾了「记住」才不再打扰。
+     */
+    private void runLauncherFile(java.io.File f) {
+        if (f == null || !f.exists()) {
+            Toast.makeText(this, R.string.launcher_run_fail, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int mode = getSharedPreferences("umbral", MODE_PRIVATE)
+                .getInt(PREF_EXEC_MODE, EXEC_ASK);
+        if (mode == EXEC_NORMAL) {
+            startTerminal(f, false);
+        } else if (mode == EXEC_ROOT) {
+            startTerminal(f, true);
+        } else {
+            showRunModeDialog(f);
+        }
+    }
+
+    /** 选择执行身份 */
+    private void showRunModeDialog(final java.io.File f) {
+        final int su = RootHelper.check();
+
+        View v = getLayoutInflater().inflate(R.layout.dialog_run_mode, null);
+        final android.widget.RadioGroup rg = v.findViewById(R.id.rg_run_mode);
+        final android.widget.RadioButton normal = v.findViewById(R.id.rb_mode_normal);
+        final android.widget.RadioButton root = v.findViewById(R.id.rb_mode_root);
+        final TextView rootDesc = v.findViewById(R.id.tv_mode_root_desc);
+        final android.widget.CheckBox remember = v.findViewById(R.id.cb_run_remember);
+
+        // 按 su 的实际状态设置 root 选项
+        if (su == RootHelper.GRANTED) {
+            root.setEnabled(true);
+            rootDesc.setText(R.string.run_mode_root_desc);
+            root.setChecked(true);          // 有 root 就默认 root，这是用户装这玩意的目的
+        } else if (su == RootHelper.DENIED) {
+            root.setEnabled(true);
+            rootDesc.setText(R.string.run_mode_root_denied);
+            normal.setChecked(true);
+        } else {
+            root.setEnabled(false);
+            rootDesc.setText(R.string.run_mode_no_su);
+            normal.setChecked(true);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.run_mode_title, f.getName()))
+                .setView(v)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.run_mode_exec,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int w) {
+                                boolean useRoot = root.isEnabled() && root.isChecked();
+                                if (remember.isChecked()) {
+                                    getSharedPreferences("umbral", MODE_PRIVATE).edit()
+                                            .putInt(PREF_EXEC_MODE,
+                                                    useRoot ? EXEC_ROOT : EXEC_NORMAL)
+                                            .apply();
+                                }
+                                startTerminal(f, useRoot);
+                            }
+                        })
+                .show();
+    }
+
+    private void startTerminal(java.io.File f, boolean useRoot) {
+        Intent i = new Intent(this, LauncherTerminalActivity.class);
+        i.putExtra(LauncherTerminalActivity.EXTRA_PATH, f.getAbsolutePath());
+        i.putExtra(LauncherTerminalActivity.EXTRA_USE_ROOT, useRoot);
+        startActivity(i);
+    }
+
+    /** 忘掉记住的执行方式，下次重新问 */
+    private void forgetExecMode() {
+        getSharedPreferences("umbral", MODE_PRIVATE).edit()
+                .remove(PREF_EXEC_MODE).apply();
+        Toast.makeText(this, R.string.run_mode_forgotten, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleShareIntent(intent);
+    }
+
+    /**
+     * 处理 ACTION_SEND / ACTION_VIEW 进来的文件。
+     *
+     * 只认 .sh / .ko —— 别的扩展名直接拒，并说明原因，
+     * 免得用户以为点了没反应。
+     */
+    private void handleShareIntent(Intent it) {
+        if (it == null) {
+            return;
+        }
+        String act = it.getAction();
+        Uri uri = null;
+        if (Intent.ACTION_SEND.equals(act)) {
+            Object o = it.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (o instanceof Uri) {
+                uri = (Uri) o;
+            }
+        } else if (Intent.ACTION_VIEW.equals(act)) {
+            uri = it.getData();
+        }
+        if (uri == null) {
+            return;
+        }
+
+        String name = queryDisplayName(uri);
+        if (!isLauncherFile(name)) {
+            Toast.makeText(this, R.string.launcher_only_shko, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // 分享进来的文件直接进启动器，并切到启动器页让用户看到
+        setLauncherEnabled(true);
+        handlePickedLauncher(uri);
+        selectTab(TAB_LAUNCHER);
+    }
+
+    /** 从 Uri 查显示名（用于判断扩展名和给文件命名） */
+    private String queryDisplayName(Uri uri) {
+        android.database.Cursor c = null;
+        try {
+            c = getContentResolver().query(uri,
+                    new String[]{android.provider.OpenableColumns.DISPLAY_NAME},
+                    null, null, null);
+            if (c != null && c.moveToFirst()) {
+                int i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (i >= 0) {
+                    return c.getString(i);
+                }
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (c != null) {
+                try {
+                    c.close();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        String seg = uri.getLastPathSegment();
+        if (seg != null) {
+            int i = seg.lastIndexOf('/');
+            return i >= 0 ? seg.substring(i + 1) : seg;
+        }
+        return null;
+    }
+
+    /** 影子用户页顶部的讲解卡片 */
+    private void showShadowIntro() {
+        String body = getString(R.string.shadow_intro_body)
+                + "\n\n"
+                + getString(R.string.shadow_su_title)
+                + "\n"
+                + getString(R.string.shadow_su_body);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.shadow_intro_title)
+                .setMessage(body)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    // ── 超级用户页 ──
+
+    /**
+     * 刷新超级用户页的状态。
+     *
+     * 能查的三件事：
+     *   ① su 二进制在不在（路径候选逐个 File.exists，不需要权限）
+     *   ② su 能不能真的跑出 uid=0（RootHelper，带 3 秒超时）
+     *   ③ root 来源（KSU / Magisk / APatch）
+     *
+     * 第 ③ 项在没有 root 的时候查不到 —— 那些目录都在 /data/adb 下，
+     * 普通应用读不了。未授权时如实显示「需 root 才能读取」，
+     * 不编一个看起来很像的答案。
+     */
+    private void renderRootUser() {
+        if (pageRootuser == null) {
+            return;
+        }
+        final TextView state = pageRootuser.findViewById(R.id.tv_rootuser_state);
+        final TextView source = pageRootuser.findViewById(R.id.tv_rootuser_source);
+        final TextView suPath = pageRootuser.findViewById(R.id.tv_rootuser_su);
+        final TextView grant = pageRootuser.findViewById(R.id.tv_rootuser_grant);
+        final TextView hint = pageRootuser.findViewById(R.id.tv_rootuser_hint);
+
+        if (state != null) {
+            state.setText(R.string.rootuser_checking);
+            state.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+        }
+
+        final String[] CANDIDATES = {
+                "/system/bin/su", "/system/xbin/su", "/sbin/su",
+                "/debug_ramdisk/su", "/data/adb/ksu/bin/su"
+        };
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String found = null;
+                for (String c : CANDIDATES) {
+                    try {
+                        if (new java.io.File(c).exists()) {
+                            found = c;
+                            break;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                final String suFound = found;
+                final int su = RootHelper.check(true);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (suPath != null) {
+                            suPath.setText(suFound == null ? "—" : suFound);
+                        }
+
+                        if (su == RootHelper.GRANTED) {
+                            if (state != null) {
+                                state.setText(R.string.rootuser_found);
+                                state.setTextColor(Ui.tc(MainActivity.this, R.attr.sk_success));
+                            }
+                            if (grant != null) {
+                                grant.setText(R.string.rootuser_granted);
+                                grant.setTextColor(Ui.tc(MainActivity.this, R.attr.sk_success));
+                            }
+                            if (source != null) {
+                                source.setText(detectRootFlavor());
+                            }
+                            if (hint != null) {
+                                hint.setText(R.string.rootuser_hint_granted);
+                            }
+                        } else if (su == RootHelper.DENIED) {
+                            if (state != null) {
+                                state.setText(R.string.rootuser_found);
+                                state.setTextColor(Ui.tc(MainActivity.this, R.attr.sk_primary));
+                            }
+                            if (grant != null) {
+                                grant.setText(R.string.rootuser_denied);
+                                grant.setTextColor(Ui.tc(MainActivity.this, R.attr.sk_primary));
+                            }
+                            if (source != null) {
+                                source.setText(R.string.rootuser_unknown_need_root);
+                            }
+                            if (hint != null) {
+                                hint.setText(R.string.rootuser_hint_denied);
+                            }
+                        } else {
+                            if (state != null) {
+                                state.setText(R.string.rootuser_not_found);
+                                state.setTextColor(Ui.tc(MainActivity.this,
+                                        R.attr.sk_on_surface_variant));
+                            }
+                            if (grant != null) {
+                                grant.setText(R.string.rootuser_no_su);
+                                grant.setTextColor(Ui.tc(MainActivity.this,
+                                        R.attr.sk_on_surface_variant));
+                            }
+                            if (source != null) {
+                                source.setText("—");
+                            }
+                            if (hint != null) {
+                                hint.setText(R.string.rootuser_hint_none);
+                            }
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /** 有 root 之后才查得到具体是哪家实现 */
+    private String detectRootFlavor() {
+        String[][] marks = {
+                {"/data/adb/ksu", "KernelSU"},
+                {"/data/adb/ap", "APatch"},
+                {"/data/adb/magisk", "Magisk"},
+        };
+        for (String[] m : marks) {
+            try {
+                if (new java.io.File(m[0]).exists()) {
+                    return m[1];
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return getString(R.string.rootuser_unknown_flavor);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 内核模块状态卡（影子用户页 + 超级用户页共用）
+    // ══════════════════════════════════════════════════════
+
+    /**
+     * 刷新两页上的模块状态。
+     *
+     * ⚠ 两个页面各 include 了一份 view_module_status，子控件 id 相同，
+     *   所以必须用 page.findViewById 做作用域查找 ——
+     *   直接 findViewById 只会命中先加进 content 的那一份。
+     */
+    private void renderModuleStatus() {
+        /*
+         * 模块状态卡已经按需求从界面上删掉了。
+         * 这里只在卡片真的存在时才刷新 —— 保留方法是因为以后可能
+         * 把状态挪进设置页或折叠区，那时候接回来只要把 include 加回去。
+         */
+        if (pageSuperuser == null
+                || pageSuperuser.findViewById(R.id.tv_mod_state) == null) {
+            return;
+        }
+        renderModuleStatusIn(pageSuperuser);
+    }
+
+    private void renderModuleStatusIn(final View page) {
+        if (page == null) {
+            return;
+        }
+        final TextView state = page.findViewById(R.id.tv_mod_state);
+        final TextView detail = page.findViewById(R.id.tv_mod_detail);
+        final TextView hint = page.findViewById(R.id.tv_mod_hint);
+        final View btnLoad = page.findViewById(R.id.btn_mod_load);
+        final View btnUnload = page.findViewById(R.id.btn_mod_unload);
+
+        if (state != null) {
+            state.setText(R.string.mod_checking);
+            state.setTextColor(Ui.tc(this, R.attr.sk_on_surface_variant));
+        }
+
+        if (btnLoad != null) {
+            btnLoad.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    doModuleAction(true);
+                }
+            });
+        }
+        if (btnUnload != null) {
+            btnUnload.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    doModuleAction(false);
+                }
+            });
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Trace.step(MainActivity.this, "modStatus:begin");
+                final boolean loaded = io.umbral.sk.ModuleControl.isLoaded();
+                Trace.step(MainActivity.this, "modStatus:loaded=" + loaded);
+                final String ver = loaded ? io.umbral.sk.ModuleControl.version() : null;
+                final String backend = loaded ? io.umbral.sk.ModuleControl.backend() : null;
+                final String grants = loaded ? io.umbral.sk.ModuleControl.grantsRaw() : null;
+                final boolean fileOk = io.umbral.sk.ModuleControl.fileInstalled();
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (state != null) {
+                            state.setText(loaded ? R.string.mod_loaded : R.string.mod_not_found);
+                            state.setTextColor(Ui.tc(MainActivity.this,
+                                    loaded ? R.attr.sk_success : R.attr.sk_on_surface_variant));
+                        }
+                        if (detail != null) {
+                            StringBuilder sb = new StringBuilder();
+                            if (loaded) {
+                                sb.append("version  ").append(trim(ver)).append('\n');
+                                sb.append("backend  ").append(trim(backend)).append('\n');
+                                sb.append("file     ")
+                                  .append(fileOk ? io.umbral.sk.ModuleControl.PATH : "未释放");
+                                int n = 0;
+                                if (grants != null) {
+                                    for (String line : grants.split("\n")) {
+                                        if (line.trim().startsWith("uid ")) {
+                                            n++;
+                                        }
+                                    }
+                                }
+                                sb.append('\n').append("授权     ").append(n).append(" 个 App");
+                            } else {
+                                sb.append("version  —\nbackend  —\nfile     ")
+                                  .append(fileOk ? io.umbral.sk.ModuleControl.PATH : "未释放");
+                            }
+                            detail.setText(sb.toString());
+                        }
+                        if (hint != null) {
+                            hint.setText(loaded ? R.string.mod_hint_loaded
+                                                : R.string.mod_hint_missing);
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private String trim(String v) {
+        if (v == null) {
+            return "—";
+        }
+        String t = v.trim();
+        return t.isEmpty() ? "—" : t;
+    }
+
+    /** load=true 加载，false 卸载 */
+    private void doModuleAction(final boolean load) {
+        Toast.makeText(this, load ? R.string.mod_checking : R.string.mod_checking,
+                Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String err;
+                if (load) {
+                    int uid = android.os.Process.myUid();
+                    err = io.umbral.sk.ModuleControl.load(MainActivity.this, uid);
+                } else {
+                    err = io.umbral.sk.ModuleControl.unload();
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (err == null) {
+                            Toast.makeText(MainActivity.this,
+                                    load ? R.string.mod_load_ok : R.string.mod_unload_ok,
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this,
+                                    getString(load ? R.string.mod_load_fail
+                                                   : R.string.mod_unload_fail, err),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        io.umbral.sk.SkBridge.invalidate();
+                        renderModuleStatus();
+                        reloadApps();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void styleNavItem(int indicatorId, int iconId, int labelId, boolean active) {
+        View indicator = findViewById(indicatorId);
+        ImageView icon = findViewById(iconId);
+        TextView label = findViewById(labelId);
+
+        indicator.setVisibility(active ? View.VISIBLE : View.INVISIBLE);
+        int color = Ui.tc(this, active ? R.attr.sk_on_primary_container : R.attr.sk_tab_inactive);
+        icon.setColorFilter(color);
+        label.setTextColor(Ui.tc(this, active ? R.attr.sk_tab_active : R.attr.sk_tab_inactive));
+    }
+}

@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Umbral</string>
+    <string name="sk_version">Umbral</string>
+    <string name="display_name">Umbral</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_superuser">Superuser</string>
+    <string name="tab_modules">Modules</string>
+    <string name="tab_kpm">KPM</string>
+    <string name="tab_settings">Settings</string>
+    <string name="home">Home</string>
+    <string name="superuser">Superuser</string>
+    <string name="modules">Modules</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="home_not_flashed">Not installed</string>
+    <string name="home_version">Version %s</string>
+    <string name="home_tap_to_flash">Tap to install ›</string>
+    <string name="home_detecting_kernel">Detecting kernel version…</string>
+    <string name="home_beta_warning">Beta build: incomplete features, the patched boot may not work</string>
+    <string name="home_root_source">Root source</string>
+    <string name="home_detecting">Detecting</string>
+    <string name="home_kernel_status">Kernel status</string>
+    <string name="home_granted_apps">Granted apps</string>
+    <string name="home_installed_modules">Installed modules</string>
+    <string name="home_redetect">Detect again</string>
+    <string name="home_flash_entry">Flash / Install</string>
+    <string name="device_info">Device info</string>
+    <string name="device_model">Model</string>
+    <string name="device_arch">Architecture</string>
+    <string name="device_kernel">Kernel version</string>
+    <string name="kernel">Kernel</string>
+    <string name="not_connected">Not connected</string>
+    <string name="connected">Connected</string>
+    <string name="not_installed">Not installed</string>
+    <string name="loading">Loading…</string>
+    <string name="root_source">Root source</string>
+    <string name="root_owned">Own</string>
+    <string name="root_borrowed">Borrowed</string>
+    <string name="root_none">None</string>
+    <string name="root_sk">Umbral</string>
+    <string name="root_ksu">KernelSU</string>
+    <string name="root_magisk">Magisk</string>
+    <string name="root_apatch">APatch</string>
+    <string name="root_other">Other manager</string>
+    <string name="root_detecting">Detecting…</string>
+    <string name="root_tap_to_detect">Tap to detect</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">Name and interface language</string>
+    <string name="lang_system">Follow system</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_ja">日本語</string>
+    <string name="lang_ko">한국어</string>
+    <string name="lang_ru">Русский</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Color scheme</string>
+    <string name="settings_theme_desc">Light / Dark / Blue / Pink</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_pink">Pink</string>
+    <string name="settings_authorization">Authorization</string>
+    <string name="settings_default_grant">Default behavior</string>
+    <string name="grant_ask">Ask</string>
+    <string name="grant_deny">Silently deny</string>
+    <string name="grant_once">Grant once</string>
+    <string name="grant_ask_desc">Prompt when an app requests root</string>
+    <string name="grant_deny_desc">Deny without notification</string>
+    <string name="grant_once_desc">Grant for a single operation</string>
+    <string name="settings_notify_request">Notify requests</string>
+    <string name="settings_notify_desc">Send a notification on new requests</string>
+    <string name="grant">Grant</string>
+    <string name="revoke">Revoke</string>
+    <string name="granted">Granted</string>
+    <string name="not_granted">Not granted</string>
+    <string name="authorize_root">Grant superuser access</string>
+    <string name="revoke_root">Revoke superuser access</string>
+    <string name="confirm_grant">Confirm grant</string>
+    <string name="confirm_grant_msg">Add “%s” to the superuser list?</string>
+    <string name="settings_hide_traces">Hide kernel traces</string>
+    <string name="settings_hide_traces_desc">Remove self from module list / symbol table / sysfs</string>
+    <string name="settings_verbose_log">Verbose log</string>
+    <string name="settings_verbose_log_desc">Log elevation windows (leaves more traces)</string>
+    <string name="settings_maintenance">Maintenance</string>
+    <string name="settings_revoke_all">Revoke all grants</string>
+    <string name="flash_title">Flash</string>
+    <string name="flash_install_method">Install method</string>
+    <string name="flash_warning">Flashing is risky — make a full backup and have a recovery plan first</string>
+    <string name="flash_mode_local">Patch a local image</string>
+    <string name="flash_mode_local_desc">LKM mode — use your own init_boot / boot image</string>
+    <string name="flash_mode_direct">Install directly to device</string>
+    <string name="flash_mode_direct_desc">Requires existing root — reads and writes the init_boot partition</string>
+    <string name="flash_image">Image</string>
+    <string name="flash_pick_image">Select image file</string>
+    <string name="flash_not_selected">Not selected</string>
+    <string name="flash_backup_before">Back up the original first</string>
+    <string name="flash_backup_desc">Saved in app storage so you can restore</string>
+    <string name="flash_image_info">Image info</string>
+    <string name="flash_next">Next</string>
+    <string name="flash_guide">View flashing guide</string>
+    <string name="flash_tip">Tap to flash or install\n(start from the %s card above)</string>
+    <string name="patch_title">Patching</string>
+    <string name="patch_preparing">Preparing…</string>
+    <string name="install">Install</string>
+    <string name="cancel">Cancel</string>
+    <string name="version">Version</string>
+    <string name="working_mode">Mode</string>
+    <string name="no_superuser">No app has been granted superuser access</string>
+    <string name="no_modules">No modules installed</string>
+    <string name="install_module">Install module</string>
+    <string name="uid">UID</string>
+    <string name="author">Author</string>
+    <string name="description">Description</string>
+    <string name="module_preview">Module preview</string>
+    <string name="pick_file_via">Pick module via %s</string>
+    <string name="mt_manager">MT Manager</string>
+    <string name="system_picker">System file picker</string>
+    <string name="search_hint">Search app name or package</string>
+    <string name="no_result">No matching apps</string>
+    <string name="app_detail">App details</string>
+    <string name="installed_at">Installed</string>
+    <string name="updated_at">Updated</string>
+    <string name="app_version">Version</string>
+    <string name="target_sdk">Target SDK</string>
+    <string name="status">Status</string>
+    <string name="app_detail_grant_hint">Once granted, this app can perform operations that require root</string>
+    <string name="kpm_title">KernelPatch modules</string>
+    <string name="kpm_engine">KPM engine</string>
+    <string name="kpm_ready">Ready</string>
+    <string name="kpm_not_ready">Not ready</string>
+    <string name="kpm_install">Install KPM</string>
+    <string name="kpm_load">Load</string>
+    <string name="kpm_unload">Unload</string>
+    <string name="kpm_loaded">Loaded</string>
+    <string name="kpm_not_loaded">Not loaded</string>
+    <string name="kpm_empty">No KPM modules yet</string>
+    <string name="kpm_hint">KPM patches the kernel at runtime and leaves no trace after unload</string>
+    <string name="kpm_engine_not_connected">KernelPatch engine not connected</string>
+    <string name="about_project_home">Project home</string>
+    <string name="about_license">License</string>
+    <string name="about_slogan">%s · Shadow Privilege</string>
+    <string name="header_version">Version: -</string>
+    <string name="header_kernel">Kernel: -</string>
+    <string name="power_reboot">Reboot</string>
+    <string name="power_soft_reboot">Soft reboot (UI only)</string>
+    <string name="power_recovery">Reboot to Recovery</string>
+    <string name="power_bootloader">Reboot to Bootloader</string>
+    <string name="power_shutdown">Power off</string>
+    <string name="confirm_power_msg">Execute “%1$s”?\n\nCurrent root source: %2$s</string>
+    <string name="toast_revoked">Revoked %s</string>
+    <string name="toast_granted">Granted %s</string>
+    <string name="app_detail_revoke_confirm">Revoke superuser access for “%s”?</string>
+    <string name="theme_picker_title">Color scheme</string>
+    <string name="mode_picker_title">Default behavior</string>
+    <string name="toast_exec_failed">Failed (root required)</string>
+    <string name="toast_redetecting">Re-detecting…</string>
+    <string name="toast_detect_again">Re-detect…</string>
+    <string name="home_flashed">Installed</string>
+    <string name="home_enabled_kernel">Enabled · kernel %s</string>
+    <string name="toast_switch_failed">Switch failed: %s</string>
+    <string name="toast_via_mt">Pick via MT Manager</string>
+    <string name="toast_no_picker">No file picker available</string>
+    <string name="toast_read_failed">Read failed: %s</string>
+    <string name="kpm_preview">KPM preview</string>
+    <string name="label_file">File: %s</string>
+    <string name="toast_kpm_pending">Install channel awaits the KPM engine</string>
+    <string name="title_unrecognized_module">Unrecognized module package</string>
+    <string name="toast_kernel_pending">Install channel awaits the kernel module</string>
+    <string name="revoke_all_msg">This clears all granted superuser permissions and cannot be undone.</string>
+    <string name="toast_revoked_all">All grants revoked</string>
+    <string name="toast_direct_needs_root">Direct install needs root — using local image mode</string>
+    <string name="toast_pick_image_first">Select an image file first</string>
+    <string name="unit_bytes">%s bytes</string>
+    <string name="patch_auto">Auto patching…</string>
+    <string name="err_file_missing">File not found: %s</string>
+    <string name="reading">Reading…</string>
+    <string name="patching">Patching…</string>
+    <string name="in_progress">In progress… %s%%</string>
+    <string name="flash_guide_title">Flashing guide</string>
+    <string name="ok">OK</string>
+    <string name="run">Run</string>
+    <string name="kmi_unknown">Cannot detect kernel version</string>
+    <string name="kmi_unsupported">This device is not supported yet</string>
+    <string name="kmi_supported">Supported · %s</string>
+    <string name="kmi_supported_custom">Supported · %s (custom kernel)</string>
+    <string name="kmi_no_info">Cannot read the kernel version, so module matching cannot be decided.\nIf the full kernel version shows up in Device info, please report it.</string>
+    <string name="mode_builtin">Built-in</string>
+    <string name="mode_kernel">Kernel</string>
+
+    <string name="shadow_title">Shadow Privilege</string>
+    <string name="shadow_loading">Reading kernel module state…</string>
+    <string name="shadow_module_section">Kernel module</string>
+    <string name="shadow_stats_section">Runtime stats</string>
+    <string name="shadow_token_section">Authorization token</string>
+    <string name="shadow_copy">Copy token</string>
+    <string name="shadow_note_title">How it works</string>
+    <string name="shadow_note_body">Shadow privilege never changes the process uid. The process stays an ordinary user; credentials are elevated only for the duration of the single system call that actually needs them, then reverted immediately.\n\nThe kernel stores no allowlist. The decision is based on a 32-byte token at 0x1000000000 in the process own memory. The token is derived from the uid, so the same uid always yields the same value.\n\nThe manager should therefore read the token and inject it into the target process — never let the target read it by itself, or any app could authorize itself.</string>
+    <string name="shadow_uid_fmt">Current uid: %1$d</string>
+    <string name="shadow_not_connected">Kernel module not connected</string>
+    <string name="shadow_need_root">Root is required to read the token</string>
+    <string name="shadow_health_ok">Elevation succeeded (this design never reverts; reverted=0 is normal)</string>
+    <string name="shadow_health_leak">Counter mismatch (this design never reverts; reverted=0 is normal)</string>
+    <string name="shadow_copied">Token copied</string>
+
+    <string name="tab_shadow">Shadow User</string>
+    <string name="tab_launcher">Launcher</string>
+    <string name="shadow_intro_title">What is a Shadow User</string>
+    <string name="shadow_intro_body">A traditional superuser hands an app a root identity: the app spawns a uid 0 process and keeps it. That process is visible to ps and easy to detect.
+
+A shadow user is different. The app never changes its uid. Privileges are elevated only inside the one system call that actually needs them, then reverted immediately. ps shows nothing unusual, and no su binary or allowlist file exists.
+
+In short: a traditional superuser answers "who are you", a shadow user answers "on whose behalf does this one call run".</string>
+    <string name="welcome_title">Welcome to Umbral</string>
+    <string name="welcome_body">Umbral is a fourth generation root framework built around shadow privilege.
+
+· Shadow User — grant an app shadow privilege without ever giving it uid 0
+· Kernel module — the privileged core, reporting backend and runtime stats
+· Modules / KPM — kernel module slots
+· Launcher — run .sh and other files with shadow privilege
+
+Use the power button to patch and flash; the menu on the right opens device and about info.</string>
+    <string name="welcome_start">Get started</string>
+    <string name="launcher_prompt_title">Enable the script launcher?</string>
+    <string name="launcher_prompt_body">If you plan to use this manager to run game assistants, choose Yes.
+
+Enabling it adds a Launcher tab to the bottom bar, where you can pick .sh / .ko and other files and run them with shadow privilege.
+
+You can turn this on or off later in Settings.</string>
+    <string name="launcher_prompt_yes">Yes, enable</string>
+    <string name="launcher_prompt_no">Not now</string>
+    <string name="settings_launcher_title">Script launcher</string>
+    <string name="settings_launcher_desc">Show the Launcher tab in the bottom bar</string>
+    <string name="launcher_title">Launcher</string>
+    <string name="launcher_empty">No files yet.
+Tap the button below to pick a .sh / .ko or any other file.</string>
+    <string name="launcher_pick">Pick file</string>
+    <string name="launcher_open_mt">Open in MT Manager</string>
+    <string name="launcher_run">Run</string>
+    <string name="launcher_remove">Remove</string>
+    <string name="launcher_note">Files are copied into the app private directory and run with shadow privilege. A file manager is used to pick files; if MT Manager is installed an extra shortcut appears.</string>
+    <string name="launcher_added">Added</string>
+    <string name="launcher_no_mt">MT Manager is not installed</string>
+    <string name="launcher_run_start">Running…</string>
+    <string name="launcher_run_done">Finished</string>
+    <string name="launcher_run_fail">Failed</string>
+    <string name="shadow_su_title">Relation to the traditional superuser</string>
+    <string name="shadow_su_body">A traditional superuser (su) gives a process uid 0. Any tool that expects su works, but a uid 0 process is trivially detected.
+
+Shadow privilege takes the other route: the process keeps its own uid, and only the syscalls that need privilege are elevated for their duration.
+
+Tools written against su (file managers in root mode, terminals, shell scripts that call su) do not work under shadow privilege alone — they need a real su channel. Apps written against the shadow API do not need su at all.</string>
+
+    <string name="shadow_intro_hint">Tap to see how shadow privilege differs from the traditional superuser</string>
+
+    <string name="launcher_note_mt">MT Manager is used by default when installed. Only .sh and .ko files are supported.</string>
+    <string name="launcher_only_shko">Only .sh and .ko files are supported</string>
+    <string name="launcher_choose_way">How to pick the file</string>
+    <string name="launcher_pick_mt">MT Manager</string>
+    <string name="launcher_pick_sys">System picker</string>
+    <string name="launcher_share_hint">In MT Manager: long-press the file → Share → Umbral</string>
+    <string name="terminal_running">Running</string>
+    <string name="terminal_started">Started %1$s</string>
+    <string name="terminal_exited">Exited (code %1$d)</string>
+    <string name="terminal_stopped">Stopped</string>
+    <string name="terminal_not_running">Script is not running</string>
+    <string name="terminal_input_hint">Type and press enter…</string>
+    <string name="terminal_send">Send</string>
+    <string name="terminal_paste">Paste</string>
+    <string name="terminal_stop">Stop</string>
+    <string name="terminal_kill_confirm">The script is still running. Stop it?</string>
+    <string name="terminal_clip_empty">Clipboard is empty</string>
+
+    <string name="terminal_err_not_shko">Only .sh and .ko files can be run</string>
+    <string name="terminal_err_no_root">Loading a .ko requires root, which is not available yet</string>
+    <string name="terminal_err_no_file">File not found</string>
+    <string name="terminal_err_start_failed">Failed to start: %1$s</string>
+    <string name="terminal_menu_title">Output</string>
+    <string name="terminal_menu_copy">Copy all</string>
+    <string name="terminal_menu_clear">Clear</string>
+    <string name="terminal_menu_save">Save log</string>
+    <string name="terminal_copied">Copied</string>
+    <string name="terminal_cleared">Cleared</string>
+    <string name="terminal_saved">Saved as %1$s</string>
+    <string name="terminal_save_fail">Save failed</string>
+
+    <string name="guard_blocked_title">Blocked</string>
+    <string name="guard_blocked_body">This script contains operations that would damage the system, so it was not started:\n\n%1$s</string>
+    <string name="guard_warn_title">Script contains risky operations</string>
+    <string name="guard_warn_body">Detected the following. Review before continuing:\n\n%1$s\n\nRun it anyway?</string>
+    <string name="guard_run_anyway">Run anyway</string>
+    <string name="guard_note">This is a static text check. Obfuscated or runtime-assembled commands cannot be intercepted here.</string>
+
+    <string name="launcher_menu_title">File actions</string>
+    <string name="launcher_menu_perm">Permissions</string>
+    <string name="launcher_menu_rename">Rename</string>
+    <string name="launcher_menu_view">View contents</string>
+    <string name="launcher_menu_path">Copy path</string>
+    <string name="launcher_menu_remove">Remove</string>
+    <string name="launcher_perm_current">Current: %1$s (%2$s)</string>
+    <string name="launcher_perm_applied">Permissions set to %1$s</string>
+    <string name="launcher_perm_fail">Failed to change permissions</string>
+    <string name="launcher_rename_hint">New file name</string>
+    <string name="launcher_renamed">Renamed</string>
+    <string name="launcher_rename_fail">Rename failed</string>
+    <string name="launcher_path_copied">Path copied</string>
+    <string name="launcher_view_empty">File is empty</string>
+    <string name="launcher_view_binary">(binary or unreadable content)</string>
+
+    <string name="terminal_exit_ok">Finished normally</string>
+    <string name="terminal_exit_signal">Killed by signal %1$d</string>
+    <string name="terminal_hint_perm">Permission denied detected. Likely causes: no root / shadow privilege yet, or the target belongs to another app.</string>
+    <string name="terminal_hint_notfound">A command or path was not found. Check the names and paths inside the script.</string>
+    <string name="terminal_hint_count">(%1$d denial(s) found)</string>
+    <string name="terminal_hint_title">Diagnosis</string>
+
+    <string name="launcher_mkdir">New folder</string>
+    <string name="launcher_root">Root</string>
+    <string name="launcher_dir_empty">This folder is empty</string>
+    <string name="launcher_mkdir_hint">Folder name</string>
+    <string name="launcher_mkdir_fail">Could not create folder</string>
+    <string name="launcher_delete_confirm">Delete "%1$s"?\n\nFolders are deleted with everything inside.</string>
+    <string name="launcher_enter_fail">Cannot open this folder</string>
+    <string name="perm_who">Identity</string>
+    <string name="perm_read">R</string>
+    <string name="perm_write">W</string>
+    <string name="perm_exec">X</string>
+    <string name="perm_owner">Owner</string>
+    <string name="perm_group">Group</string>
+    <string name="perm_other">Other</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_unsaved">Unsaved changes</string>
+    <string name="editor_save_ok">Saved</string>
+    <string name="editor_save_fail">Save failed</string>
+    <string name="editor_empty">Empty file</string>
+    <string name="editor_tab">Tab</string>
+    <string name="editor_comment">Comment</string>
+    <string name="editor_lines">%1$d lines</string>
+    <string name="editor_leave_confirm">You have unsaved changes. Discard them?</string>
+    <string name="editor_discard">Discard</string>
+    <string name="guard_save_confirm">This content contains operations that could damage the system. Save anyway?\n\n%1$s</string>
+
+    <string name="launcher_menu_edit">Edit contents</string>
+
+    <string name="launcher_store_label">Stored in</string>
+
+    <string name="run_mode_title">%1$s\nHow should it run?</string>
+    <string name="run_mode_normal">Normal permissions</string>
+    <string name="run_mode_normal_desc">Runs as the app\'s own uid. Whatever the app cannot access is denied.</string>
+    <string name="run_mode_root">Root</string>
+    <string name="run_mode_root_desc">Runs through su. Can reach any file on the system.</string>
+    <string name="run_mode_root_denied">su exists but has not granted access yet. It will ask when you run.</string>
+    <string name="run_mode_no_su">No su on this device, so root is unavailable.</string>
+    <string name="run_mode_remember">Remember my choice</string>
+    <string name="run_mode_exec">Run</string>
+    <string name="run_mode_reset">Ask each time (reset)</string>
+    <string name="run_mode_forgotten">Will ask again next time</string>
+    <string name="run_mode_normal_short">normal</string>
+    <string name="run_mode_root_short">root</string>
+    <string name="terminal_as_user">Running as: %1$s</string>
+
+    <string name="tab_rootuser">Superuser</string>
+    <string name="rootuser_title">Superuser</string>
+    <string name="rootuser_checking">Checking…</string>
+    <string name="rootuser_source">Root source</string>
+    <string name="rootuser_su_path">su path</string>
+    <string name="rootuser_grant">Grant status</string>
+    <string name="rootuser_what_title">What superuser means</string>
+    <string name="rootuser_what_body">Superuser (su) is the traditional way to elevate: an app asks for root, and once granted its process uid really becomes 0, giving it sight and control over everything on the device — with no boundary at all.\n\nBecause there is no boundary, one compromised, mistyped or remotely exploited root app costs you the whole device. That is exactly why shadow privilege exists.</string>
+    <string name="rootuser_compare_title">Versus shadow user</string>
+    <string name="rootuser_compare_body">· Process uid\n    Superuser: actually 0, until the process exits\n    Shadow: unchanged, only selected syscalls are allowed\n\n· Scope\n    Superuser: everything\n    Shadow: only what the window allows\n\n· Kernel records\n    Superuser: keeps an allowlist\n    Shadow: keeps nothing, only an in-memory token\n\n· Detection\n    Superuser: easy, uid gives it away\n    Shadow: hard, the process still sees its own uid\n\n· Across exec\n    Superuser: persists\n    Shadow: currently lost (path B pending)\n\n· Can run su tooling\n    Superuser: yes\n    Shadow: no</string>
+    <string name="rootuser_when_title">Which one to use</string>
+    <string name="rootuser_when_body">MT Manager root mode, Termux, or any script written against su → use superuser.\n\nLetting one app read a config under /data without handing it the whole device → use shadow.\n\nThey do not conflict. Being honest though: the superuser channel is not wired up yet — the manager itself has no root, so this page can only read status, not manage the allowlist.</string>
+
+    <string name="rootuser_found">Detected</string>
+    <string name="rootuser_not_found">Not detected</string>
+    <string name="rootuser_granted">Granted</string>
+    <string name="rootuser_denied">Not granted</string>
+    <string name="rootuser_no_su">No su</string>
+    <string name="rootuser_unknown_need_root">needs root to read</string>
+    <string name="rootuser_unknown_flavor">unknown</string>
+    <string name="rootuser_hint_granted">su works. The launcher can run scripts with root — tap a script and pick "Root".</string>
+    <string name="rootuser_hint_denied">su exists but this app has no grant yet. Approve it in your root manager, then reopen this page.</string>
+    <string name="rootuser_hint_none">No su found on this device. Shadow privilege is the only elevation path available here.</string>
+
+    <string name="grant_mode_title">%1$s\nHow to authorize?</string>
+    <string name="grant_mode_shadow">Shadow user (uid unchanged)</string>
+    <string name="grant_mode_shadow_desc">Gets full capabilities but keeps its original uid. Programs cannot tell it has root.</string>
+    <string name="grant_mode_super">Superuser (uid becomes 0)</string>
+    <string name="grant_mode_super_desc">Shadow plus writable grant table. The app keeps its uid; the su child it spawns is real uid 0.</string>
+    <string name="grant_failed">Authorization failed: %1$s</string>
+    <string name="revoke_failed">Revoke failed: %1$s</string>
+    <string name="granted_shadow">Authorized (shadow)</string>
+    <string name="granted_super">Authorized (superuser)</string>
+
+    <string name="mod_status_title">Kernel module</string>
+    <string name="mod_checking">Checking…</string>
+    <string name="mod_load">Load</string>
+    <string name="mod_unload">Unload</string>
+    <string name="mod_loaded">Loaded</string>
+    <string name="mod_not_found">Not found</string>
+    <string name="mod_hint_loaded">Module is running. Authorizations below take effect immediately.</string>
+    <string name="mod_hint_missing">sk_root module is not loaded. Without it nothing below works. Tap Load (needs root).</string>
+    <string name="mod_load_ok">Module loaded</string>
+    <string name="mod_load_fail">Load failed: %1$s</string>
+    <string name="mod_unload_ok">Module unloaded</string>
+    <string name="mod_unload_fail">Unload failed: %1$s</string>
+    <string name="mod_need_root">No root available, cannot load the module</string>
+
+    <string name="no_rootuser_apps">No apps authorized as superuser yet</string>
+
+    <string name="mod_remove">Uninstall</string>
+    <string name="mod_remove_title">Uninstall %1$s?</string>
+    <string name="mod_remove_msg">The module will be marked for removal and deleted on the next reboot.</string>
+    <string name="mod_remove_ok">%1$s marked for removal</string>
+    <string name="mod_remove_failed">Uninstall failed: %1$s</string>
+
+    <string name="um_title">UM modules</string>
+    <string name="um_hint">Encrypted in /data/adb/umbral/um, auto-loaded at boot. Supports plain rules and bytecode programs. Tap to apply, long-press to delete.</string>
+    <string name="um_empty">No UM modules yet</string>
+    <string name="um_import">Import UM module</string>
+    <string name="um_import_ok">Imported %1$s</string>
+    <string name="um_import_fail">Import failed: %1$s</string>
+    <string name="um_apply_ok">Applied %1$s</string>
+    <string name="um_apply_fail">Apply failed: %1$s</string>
+    <string name="um_delete">Delete</string>
+    <string name="um_delete_title">Delete %1$s?</string>
+    <string name="um_delete_msg">The module file will be removed from disk.</string>
+    <string name="um_delete_fail">Delete failed</string>
+    <string name="um_menu">UM modules</string>
+    <string name="um_nav">UM</string>
+    <string name="um_intro_title">What is UM</string>
+    <string name="um_intro_body" formatted="false">In short: make one specific app unable to see a specific file, while every other app and the system still see it normally.
+
+Unlike a normal module (which puts files on disk and needs a reboot), UM changes nothing on disk and needs no reboot - it only affects the permission check at that moment.</string>
+    <string name="um_intro_more" formatted="false">How to use ▾</string>
+    <string name="um_intro_full" formatted="false">[Can do]
+· hide a chosen file from one chosen app
+· only that app is affected
+· rules are stored encrypted and loaded at boot
+
+[Cannot do]
+· cannot change app internals (that is LSPosed)
+· cannot replace system files (that is a normal module)
+· currently only the "hide file" action
+
+[Rule format]
+one rule per line: uid N dev N ino N
+example: uid 10560 dev 65082 ino 1073146 hide
+
+Get dev and ino with: stat -c "%%d %%i" &lt;path&gt;
+
+[Import]
+1. write the line in any text editor, save as .txt
+2. tap "Import UM module" below
+3. the app validates and encrypts it
+4. tap it in the list to apply
+</string>
+    <string name="um_intro_collapse" formatted="false">Collapse ▴</string>
+    <string name="settings_export_log">Export logs</string>
+    <string name="settings_export_log_desc">Collect the state of every feature, fully localized, shareable</string>
+    <string name="export_log_running">Collecting logs...</string>
+    <string name="export_log_fail">Export failed, try again</string>
+    <string name="export_log_done">Logs exported</string>
+    <string name="export_log_share">Share</string>
+    <string name="export_log_hint">This report contains the state of every feature.</string>
+    <string name="um_tpl_open">UM templates</string>
+    <string name="um_tpl_pick">Pick a template</string>
+    <string name="um_tpl_target">Apply to which app?</string>
+    <string name="um_tpl_done">Applied %1$d rules</string>
+    <string name="um_tpl_none">None of the template paths exist on this device</string>
+    <string name="um_repo_title">UM repository</string>
+    <string name="um_repo_hint">Pick a template, then pick the apps it applies to (searchable, multi-select)</string>
+    <string name="um_repo_search">Search name / package / uid</string>
+    <string name="um_repo_empty">No templates yet</string>
+    <string name="um_repo_no_match">No matching app</string>
+    <string name="um_repo_apply">Apply to %1$d selected</string>
+    <string name="um_repo_applying">Applying…</string>
+    <string name="um_repo_open">Repository</string>
+    <string name="um_repo_saved">UM module created</string>
+    <string name="um_repo_go_um">Open UM</string>
+    <string name="settings_guard">System guard</string>
+    <string name="settings_guard_desc">Block any process from modifying critical system partitions</string>
+    <string name="guard_alert_title">Dangerous operation blocked</string>
+    <string name="guard_alert_body">Your device may be under attack. Umbral has protected it. Blocked attempts:\n\n</string>
+    <string name="guard_alert_ok">Got it</string>
+    <string name="guard_alert_clear">Clear log</string>
+    <string name="guard_on">System guard enabled</string>
+    <string name="guard_off">System guard disabled</string>
+    <string name="guard_unsupported">Kernel does not support system guard (needs v0.73+)</string>
+    <string name="settings_full_shadow">Full shadow</string>
+    <string name="settings_full_shadow_desc">Add a third grant mode that never touches SELinux</string>
+    <string name="grant_mode_full">Full shadow</string>
+    <string name="grant_mode_full_desc">DAC bypass only; SELinux untouched. Needs Umbral API for system paths.</string>
+    <string name="full_shadow_card_title">What is full shadow</string>
+    <string name="full_shadow_card_body">What is full shadow\n\nNormal shadow rewrites SELinux denials, leaving traces. Full shadow never touches SELinux - only DAC is bypassed.\n\nCost: paths denied by SELinux must go through /proc/sk/io.\n\nShell usage:\nprintf \&quot;read /path\&quot; | dd of=/proc/sk/io conv=notrunc\ncat /proc/sk/io\n\nprintf \&quot;list /path\&quot; | dd of=/proc/sk/io conv=notrunc\ncat /proc/sk/io</string>
+    <string name="mod_action_run">Run action.sh</string>
+    <string name="vivo_guard">Vivo/iQOO anti-root guard</string>
+    <string name="vivo_guard_desc">Hide root traces from Vivo/iQOO security apps</string>
+    <string name="um_reapply">Re-apply</string>
+    <string name="um_edit_apps">Change apps</string>
+    <string name="power_edl">Reboot to EDL (9008)</string>
+    <string name="power_fastboot">Fastboot</string>
+    <string name="privacy_title">Privacy &amp; compliance</string>
+    <string name="privacy_body">This app has no network access and collects nothing.\n\n- No INTERNET permission, no analytics or crash-reporting SDK\n- Grants, modules and logs live only under /data/adb/umbral/ on this device\n- Logs are local files only and can be cleared from Settings\n- Uninstalling keeps /data/adb/umbral/; delete it manually for a full wipe\n\nKernel side: /proc/umbral and /proc/umbral_kmem exist in memory only.</string>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="sk_primary" format="color" />
+    <attr name="sk_btn_primary_bg" format="color" />
+    <attr name="sk_on_primary" format="color" />
+    <attr name="sk_primary_container" format="color" />
+    <attr name="sk_on_primary_container" format="color" />
+    <attr name="sk_surface" format="color" />
+    <attr name="sk_on_surface" format="color" />
+    <attr name="sk_surface_variant" format="color" />
+    <attr name="sk_on_surface_variant" format="color" />
+    <attr name="sk_card" format="color" />
+    <attr name="sk_nav_bg" format="color" />
+    <attr name="sk_chip_bg" format="color" />
+    <attr name="sk_chip_text" format="color" />
+    <attr name="sk_divider" format="color" />
+    <attr name="sk_tab_active" format="color" />
+    <attr name="sk_tab_inactive" format="color" />
+    <attr name="sk_outline" format="color" />
+    <attr name="sk_error" format="color" />
+    <attr name="sk_success" format="color" />
+</resources>

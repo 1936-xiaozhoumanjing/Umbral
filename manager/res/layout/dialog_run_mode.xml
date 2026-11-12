@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  执行方式选择：普通权限 / root 权限
+
+  为什么点每个文件都要问一次：同一个脚本用不同身份跑，结果完全不同
+  （能读 /data 还是不能）。默认记住上次选择，但用户可以随时在 ⋮ 里改。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="4dp">
+
+    <RadioGroup
+        android:id="@+id/rg_run_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_mode_normal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="@string/run_mode_normal"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="34dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/run_mode_normal_desc"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textSize="11sp" />
+
+        <RadioButton
+            android:id="@+id/rb_mode_root"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="@string/run_mode_root"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/tv_mode_root_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="34dp"
+            android:text="@string/run_mode_root_desc"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textSize="11sp" />
+    </RadioGroup>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="14dp"
+        android:background="?attr/sk_divider" />
+
+    <CheckBox
+        android:id="@+id/cb_run_remember"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:paddingBottom="4dp"
+        android:text="@string/run_mode_remember"
+        android:textColor="?attr/sk_on_surface_variant"
+        android:textSize="13sp" />
+</LinearLayout>

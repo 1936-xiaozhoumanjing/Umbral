@@ -1,0 +1,29 @@
+#!/system/bin/sh
+# 影核 magisk 兼容壳 —— 只实现模块脚本里最常用的几个子命令
+case "$1" in
+  --version|-v)
+    echo "27.0:MAGISK"
+    ;;
+  --path|--magiskpath)
+    echo "/data/adb/umbral"
+    ;;
+  --daemon)
+    echo "umbral-daemon (not implemented)"
+    ;;
+  resetprop)
+    shift
+    exec /data/local/tmp/umbral/bin/resetprop "$@"
+    ;;
+  su)
+    shift
+    exec /data/local/tmp/umbral/su "$@"
+    ;;
+  --sqlite)
+    shift
+    exec /system/bin/sqlite3 "$@"
+    ;;
+  *)
+    # 未知子命令：不报错退出，避免模块中断
+    exit 0
+    ;;
+esac

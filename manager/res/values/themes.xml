@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- manifest 用的默认别名，实际主题由 BaseActivity.setTheme() 决定 -->
+    <style name="Theme.Umbral" parent="Theme.Umbral.Dark" />
+
+    <!-- ========== 1. 浅色 ========== -->
+        <style name="Theme.Umbral.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="sk_primary">#141418</item>
+        <item name="sk_btn_primary_bg">#141418</item>
+        <item name="sk_on_primary">#FFFFFF</item>
+        <item name="sk_primary_container">#ECECF0</item>
+        <item name="sk_on_primary_container">#141418</item>
+        <item name="sk_surface">#FBFBFC</item>
+        <item name="sk_on_surface">#141418</item>
+        <item name="sk_surface_variant">#ECECF0</item>
+        <item name="sk_on_surface_variant">#55555E</item>
+        <item name="sk_card">#FFFFFF</item>
+        <item name="sk_nav_bg">#F3F3F6</item>
+        <item name="sk_chip_bg">#ECECF0</item>
+        <item name="sk_chip_text">#141418</item>
+        <item name="sk_divider">#E4E4E9</item>
+        <item name="sk_tab_active">#141418</item>
+        <item name="sk_tab_inactive">#85858F</item>
+        <item name="sk_outline">#C6C6CE</item>
+        <item name="sk_error">#C62828</item>
+        <item name="sk_success">#2E7D32</item>
+        <item name="android:colorPrimary">?attr/sk_primary</item>
+        <item name="android:colorAccent">?attr/sk_primary</item>
+        <item name="android:windowBackground">?attr/sk_surface</item>
+        <item name="android:statusBarColor">?attr/sk_surface</item>
+        <item name="android:navigationBarColor">?attr/sk_nav_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:textColorPrimary">?attr/sk_on_surface</item>
+        <item name="android:textColorSecondary">?attr/sk_on_surface_variant</item>
+        <item name="android:colorControlNormal">?attr/sk_on_surface_variant</item>
+    </style>
+
+    <!-- ========== 2. 深色 ========== -->
+        <style name="Theme.Umbral.Dark" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="sk_primary">#FFFFFF</item>
+        <item name="sk_btn_primary_bg">#FFFFFF</item>
+        <item name="sk_on_primary">#0E0E11</item>
+        <item name="sk_primary_container">#2C2C33</item>
+        <item name="sk_on_primary_container">#FFFFFF</item>
+        <item name="sk_surface">#0B0B0E</item>
+        <item name="sk_on_surface">#F5F5F7</item>
+        <item name="sk_surface_variant">#2C2C33</item>
+        <item name="sk_on_surface_variant">#A6A6B0</item>
+        <item name="sk_card">#16161B</item>
+        <item name="sk_nav_bg">#121216</item>
+        <item name="sk_chip_bg">#2C2C33</item>
+        <item name="sk_chip_text">#F5F5F7</item>
+        <item name="sk_divider">#26262C</item>
+        <item name="sk_tab_active">#FFFFFF</item>
+        <item name="sk_tab_inactive">#74747E</item>
+        <item name="sk_outline">#3A3A42</item>
+        <item name="sk_error">#FF7A7A</item>
+        <item name="sk_success">#66D97F</item>
+        <item name="android:colorPrimary">?attr/sk_primary</item>
+        <item name="android:colorAccent">?attr/sk_primary</item>
+        <item name="android:windowBackground">?attr/sk_surface</item>
+        <item name="android:statusBarColor">?attr/sk_surface</item>
+        <item name="android:navigationBarColor">?attr/sk_nav_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:textColorPrimary">?attr/sk_on_surface</item>
+        <item name="android:textColorSecondary">?attr/sk_on_surface_variant</item>
+        <item name="android:colorControlNormal">?attr/sk_on_surface_variant</item>
+    </style>
+
+    <!-- ========== 3. 淡蓝色 ========== -->
+    <style name="Theme.Umbral.Blue" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="sk_primary">#1976D2</item>
+        <item name="sk_btn_primary_bg">#1976D2</item>
+        <item name="sk_on_primary">#FFFFFF</item>
+        <item name="sk_primary_container">#D6E4FF</item>
+        <item name="sk_on_primary_container">#001B3D</item>
+        <item name="sk_surface">#F7FAFF</item>
+        <item name="sk_on_surface">#1A1C1E</item>
+        <item name="sk_surface_variant">#DDE3EA</item>
+        <item name="sk_on_surface_variant">#41474D</item>
+        <item name="sk_card">#FFFFFF</item>
+        <item name="sk_nav_bg">#EAF1FB</item>
+        <item name="sk_chip_bg">#D6E4FF</item>
+        <item name="sk_chip_text">#001B3D</item>
+        <item name="sk_divider">#DDE3EA</item>
+        <item name="sk_tab_active">#0B1F33</item>
+        <item name="sk_tab_inactive">#6B7280</item>
+        <item name="sk_outline">#71787E</item>
+        <item name="sk_error">#BA1A1A</item>
+        <item name="sk_success">#2E7D32</item>
+        <item name="android:colorPrimary">?attr/sk_primary</item>
+        <item name="android:colorAccent">?attr/sk_primary</item>
+        <item name="android:windowBackground">?attr/sk_surface</item>
+        <item name="android:statusBarColor">?attr/sk_primary_container</item>
+        <item name="android:navigationBarColor">?attr/sk_nav_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:textColorPrimary">?attr/sk_on_surface</item>
+        <item name="android:textColorSecondary">?attr/sk_on_surface_variant</item>
+        <item name="android:colorControlNormal">?attr/sk_on_surface_variant</item>
+    </style>
+
+    <!-- ========== 4. 淡粉色 ========== -->
+    <style name="Theme.Umbral.Pink" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="sk_primary">#C2185B</item>
+        <item name="sk_btn_primary_bg">#C2185B</item>
+        <item name="sk_on_primary">#FFFFFF</item>
+        <item name="sk_primary_container">#FFD9E2</item>
+        <item name="sk_on_primary_container">#3E001D</item>
+        <item name="sk_surface">#FFF8F9</item>
+        <item name="sk_on_surface">#201A1B</item>
+        <item name="sk_surface_variant">#F2DDE1</item>
+        <item name="sk_on_surface_variant">#514347</item>
+        <item name="sk_card">#FFFFFF</item>
+        <item name="sk_nav_bg">#FCE9ED</item>
+        <item name="sk_chip_bg">#FFD9E2</item>
+        <item name="sk_chip_text">#3E001D</item>
+        <item name="sk_divider">#F2DDE1</item>
+        <item name="sk_tab_active">#3B0A1D</item>
+        <item name="sk_tab_inactive">#7D6B70</item>
+        <item name="sk_outline">#857377</item>
+        <item name="sk_error">#BA1A1A</item>
+        <item name="sk_success">#2E7D32</item>
+        <item name="android:colorPrimary">?attr/sk_primary</item>
+        <item name="android:colorAccent">?attr/sk_primary</item>
+        <item name="android:windowBackground">?attr/sk_surface</item>
+        <item name="android:statusBarColor">?attr/sk_primary_container</item>
+        <item name="android:navigationBarColor">?attr/sk_nav_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:textColorPrimary">?attr/sk_on_surface</item>
+        <item name="android:textColorSecondary">?attr/sk_on_surface_variant</item>
+        <item name="android:colorControlNormal">?attr/sk_on_surface_variant</item>
+    </style>
+
+</resources>

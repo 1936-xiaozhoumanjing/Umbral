@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="card_radius">18dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="page_padding">16dp</dimen>
+    <dimen name="item_height">76dp</dimen>
+    <dimen name="nav_height">76dp</dimen>
+    <dimen name="icon_size">44dp</dimen>
+    <dimen name="small_icon">24dp</dimen>
+    <dimen name="nav_icon">24dp</dimen>
+</resources>

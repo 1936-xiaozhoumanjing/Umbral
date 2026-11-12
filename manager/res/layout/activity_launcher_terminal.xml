@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  内置终端
+
+  布局逻辑和普通终端一致：
+    上面是输出区（等宽字体、可选中、自动滚到底）
+    中间一排快捷按键（很多脚本提示「按 1 / 按 2」，手指点比调键盘快）
+    下面是输入行（EditText + 粘贴 + 回车）
+
+  为什么不用 WebView 或 TerminalView：
+    我们不需要 ANSI 转义和全屏光标定位 —— 脚本启动时设了 TERM=dumb，
+    输出就是纯文本。用一个可滚动的 TextView 足够，还省体积。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/sk_surface">
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:id="@+id/btn_term_back"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="11dp"
+            android:src="@drawable/ic_chevron_right"
+            android:rotation="180"
+            android:tint="?attr/sk_on_surface_variant"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="6dp">
+
+            <TextView
+                android:id="@+id/tv_term_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="?attr/sk_on_surface"
+                android:singleLine="true"
+                android:ellipsize="middle" />
+
+            <TextView
+                android:id="@+id/tv_term_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="?attr/sk_on_surface_variant"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_term_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_btn_danger"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="@string/terminal_stop"
+            android:textColor="#FFFFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- 输出区 -->
+    <ScrollView
+        android:id="@+id/sv_term_out"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/bg_card"
+        android:padding="12dp"
+        android:scrollbars="vertical">
+
+        <TextView
+            android:id="@+id/tv_term_out"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp"
+            android:text=""
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:textIsSelectable="false"
+            android:textSize="12sp"
+            android:textColor="?attr/sk_on_surface" />
+    </ScrollView>
+
+    <!-- 快捷按键：横向可滚，脚本提示「按 1 / 按 y」时点一下就送过去 -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/row_term_keys"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
+    </HorizontalScrollView>
+
+    <!-- 输入行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="12dp">
+
+        <EditText
+            android:id="@+id/et_term_in"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_search"
+            android:hint="@string/terminal_input_hint"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="3"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:textColor="?attr/sk_on_surface"
+            android:textColorHint="?attr/sk_on_surface_variant"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/btn_term_paste"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_btn_secondary"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:text="@string/terminal_paste"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="12sp"
+            android:clickable="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
+
+        <TextView
+            android:id="@+id/btn_term_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_btn_primary"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:text="@string/terminal_send"
+            android:textColor="?attr/sk_on_primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
+    </LinearLayout>
+</LinearLayout>

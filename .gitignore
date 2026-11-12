@@ -1,0 +1,54 @@
+# --- 构建产物（不入库）---
+*.ko
+*.o
+*.mod
+*.mod.c
+*.order
+*.symvers
+*.cmd
+.tmp_versions/
+Module.symvers
+
+# --- 密钥与签名（绝对不入库）---
+*.jks
+*.keystore
+*.p12
+*.pem
+*.pk8
+
+# --- 镜像（体积大，走 Release）---
+*.img
+*.zip
+!*.inc
+
+# --- 本地调试留档 ---
+_build.log
+_*.py
+_*.sh
+_boottest/
+*.bak
+*.orig
+*.log
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- 系统 ---
+Thumbs.db
+.DS_Store
+# --- 管理器构建中间产物 ---
+manager/build/
+manager/_build_classes/
+manager/_check/
+manager/_dc2/
+manager/_apkdump/
+manager/_asset_backup/
+manager/out/
+manager/obj/
+manager/test/
+
+# --- 例外：APK 打包所需的预编译模块要入库 ---
+!manager/assets/**/*.ko
+!manager/assets/**/umbral_init

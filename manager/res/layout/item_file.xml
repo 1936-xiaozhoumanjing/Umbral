@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  文件列表项 —— 照 MT 管理器的密度做。
+
+  和之前「卡片」的区别：
+    · 不做圆角背景，靠 ListView 的 1px 分割线分隔
+    · 垂直内边距 10dp，一行约 56dp，一屏能看 10 条以上
+    · 图标直接放着，不套圆圈底座
+    · 权限单独一列右对齐，扫一眼就能看出文件能不能执行
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="14dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/iv_file_icon"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:src="@drawable/ic_file"
+        android:tint="?attr/sk_primary" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="6dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_file_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_file_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- 权限位独立一列，等宽字体，方便上下扫读 -->
+    <TextView
+        android:id="@+id/tv_file_perm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:fontFamily="monospace"
+        android:singleLine="true"
+        android:textColor="?attr/sk_on_surface_variant"
+        android:textSize="10sp" />
+
+    <ImageView
+        android:id="@+id/btn_file_run"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_play"
+        android:tint="?attr/sk_primary"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="false"
+        android:focusableInTouchMode="false" />
+
+    <ImageView
+        android:id="@+id/btn_file_menu"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_more_vert"
+        android:tint="?attr/sk_on_surface_variant"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="false"
+        android:focusableInTouchMode="false" />
+</LinearLayout>

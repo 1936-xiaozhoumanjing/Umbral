@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  内核模块状态卡 —— 影子用户页和超级用户页共用。
+
+  要点：
+    · 没加载时明确写「未找到 sk_root 模块」，不显示一堆零
+    · 加载/卸载按钮就在卡里，不用去别处找
+    · 放在最上面：没有模块，下面所有授权都是空谈
+
+  注意：两个页面各 include 一份，子控件 id 相同。
+  MainActivity 里必须用 pageSuperuser.findViewById / pageRootuser.findViewById
+  做作用域查找，不能直接 findViewById（会命中第一份）。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_module"
+            android:tint="?attr/sk_primary" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:text="@string/mod_status_title"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_mod_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/mod_checking"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_mod_detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:lineSpacingExtra="3dp"
+        android:textColor="?attr/sk_on_surface_variant"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/tv_mod_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingExtra="3dp"
+        android:textColor="?attr/sk_on_surface_variant"
+        android:textSize="11sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_mod_load"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_btn_primary"
+            android:gravity="center"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="@string/mod_load"
+            android:textColor="?attr/sk_on_primary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="false" />
+
+        <TextView
+            android:id="@+id/btn_mod_unload"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_btn_secondary"
+            android:gravity="center"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="@string/mod_unload"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="13sp"
+            android:clickable="true"
+            android:focusable="false" />
+    </LinearLayout>
+</LinearLayout>

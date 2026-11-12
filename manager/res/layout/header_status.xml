@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_card"
+    android:padding="@dimen/card_padding"
+    android:layout_marginStart="@dimen/page_padding"
+    android:layout_marginEnd="@dimen/page_padding"
+    android:layout_marginTop="@dimen/page_padding"
+    android:layout_marginBottom="8dp"
+    android:gravity="center_vertical">
+
+    <FrameLayout
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_circle">
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_superuser"
+            android:tint="?attr/sk_primary" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp">
+
+        <TextView
+            android:id="@+id/tv_sk_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sk_version"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="?attr/sk_on_surface" />
+
+        <TextView
+            android:id="@+id/tv_sk_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="@string/header_version"
+            android:textSize="13sp"
+            android:textColor="?attr/sk_on_surface_variant" />
+
+        <TextView
+            android:id="@+id/tv_sk_kernel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/header_kernel"
+            android:textSize="13sp"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:singleLine="true"
+            android:ellipsize="middle" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_sk_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_chip"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/not_connected"
+        android:textSize="11sp"
+        android:textColor="?attr/sk_chip_text" />
+</LinearLayout>

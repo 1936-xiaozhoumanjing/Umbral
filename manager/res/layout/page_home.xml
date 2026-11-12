@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/page_padding">
+
+        <!-- 影核 状态卡（可点击进入刷入页） -->
+        <LinearLayout
+            android:id="@+id/card_umbral"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="20dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+            <FrameLayout
+                android:id="@+id/fl_home_icon"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bg_circle">
+
+                <ImageView
+                    android:id="@+id/iv_home_status_icon"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_status_cross"
+                    android:tint="?attr/sk_on_surface_variant" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/display_name"
+                    android:textSize="21sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_home_state"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="@string/home_not_flashed"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_error" />
+
+                <TextView
+                    android:id="@+id/tv_home_version"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/version"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+
+                <TextView
+                    android:id="@+id/tv_home_flash_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/home_tap_to_flash"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_primary" />
+            </LinearLayout>
+            </LinearLayout>
+
+            <!-- KMI 支持情况：模块库里没有匹配这个内核的 .ko 时显示红色提示 -->
+            <TextView
+                android:id="@+id/tv_home_kmi_support"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_chip"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/home_detecting_kernel"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="?attr/sk_on_surface_variant"
+                android:visibility="gone" />
+
+            <!-- 修复建议：不支持时告诉用户该怎么做 -->
+            <TextView
+                android:id="@+id/tv_home_kmi_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="2dp"
+                android:textSize="11sp"
+                android:textColor="?attr/sk_on_surface_variant"
+                android:visibility="gone" />
+
+            <!-- 内测警示：卡片右下角小字 -->
+            <TextView
+                android:id="@+id/tv_home_beta_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="end"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/home_beta_warning"
+                android:textSize="11sp"
+                android:textColor="?attr/sk_error" />
+        </LinearLayout>
+
+        <!-- 状态行 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_root_source"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_home_root_source"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:text="@string/home_detecting"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_chip_text" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+            <LinearLayout
+                android:id="@+id/row_root_source"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_kernel_status"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_home_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:text="@string/not_connected"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_chip_text" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 统计 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:paddingTop="18dp"
+                android:paddingBottom="18dp">
+
+                <TextView
+                    android:id="@+id/tv_stat_apps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/home_granted_apps"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:paddingTop="18dp"
+                android:paddingBottom="18dp">
+
+                <TextView
+                    android:id="@+id/tv_stat_modules"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/home_installed_modules"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 设备信息 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/device_info"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?attr/sk_primary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="72dp"
+                    android:singleLine="true"
+                    android:text="@string/device_model"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_dev_model"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="72dp"
+                    android:singleLine="true"
+                    android:text="Android"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_dev_android"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="72dp"
+                    android:singleLine="true"
+                    android:text="@string/device_arch"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_dev_arch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="72dp"
+                    android:singleLine="true"
+                    android:text="SELinux"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_dev_selinux"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:text="-"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+            <!-- 内核完整显示，不带省略号 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/device_kernel"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <TextView
+                    android:id="@+id/tv_dev_kernel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="-"
+                    android:textSize="12sp"
+                    android:textColor="?attr/sk_on_surface_variant"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 快捷操作 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+
+            <LinearLayout
+                android:id="@+id/row_reconnect"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_redetect"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_refresh"
+                    android:tint="?attr/sk_on_surface_variant" />
+            </LinearLayout>
+
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

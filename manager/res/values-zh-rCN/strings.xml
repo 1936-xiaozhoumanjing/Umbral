@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sk_version">影核</string>
+    <string name="display_name">影核</string>
+    <string name="tab_home">主页</string>
+    <string name="tab_superuser">超级用户</string>
+    <string name="tab_modules">模块</string>
+    <string name="tab_kpm">KPM</string>
+    <string name="tab_settings">设置</string>
+    <string name="home">主页</string>
+    <string name="superuser">超级用户</string>
+    <string name="modules">模块</string>
+    <string name="settings">设置</string>
+    <string name="about">关于</string>
+    <string name="home_not_flashed">未刷入</string>
+    <string name="home_version">版本 %s</string>
+    <string name="home_tap_to_flash">点击此刷入 ›</string>
+    <string name="home_detecting_kernel">正在检测内核版本…</string>
+    <string name="home_beta_warning">内测阶段功能不完全，有概率导致修补的 boot 不能使用</string>
+    <string name="home_root_source">root 来源</string>
+    <string name="home_detecting">检测中</string>
+    <string name="home_kernel_status">内核状态</string>
+    <string name="home_granted_apps">已授权应用</string>
+    <string name="home_installed_modules">已安装模块</string>
+    <string name="home_redetect">重新检测</string>
+    <string name="home_flash_entry">刷入 / 安装</string>
+    <string name="device_info">设备信息</string>
+    <string name="device_model">型号</string>
+    <string name="device_arch">架构</string>
+    <string name="device_kernel">内核版本</string>
+    <string name="kernel">内核</string>
+    <string name="not_connected">未连接</string>
+    <string name="connected">已连接</string>
+    <string name="not_installed">未安装</string>
+    <string name="loading">加载中…</string>
+    <string name="root_source">root 来源</string>
+    <string name="root_owned">自有</string>
+    <string name="root_borrowed">借来的</string>
+    <string name="root_none">无</string>
+    <string name="root_sk">影核</string>
+    <string name="root_ksu">KernelSU</string>
+    <string name="root_magisk">Magisk</string>
+    <string name="root_apatch">APatch</string>
+    <string name="root_other">其他管理器</string>
+    <string name="root_detecting">检测中…</string>
+    <string name="root_tap_to_detect">点击检测</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_desc">名称与界面语言</string>
+    <string name="lang_system">跟随系统</string>
+    <string name="lang_en">English</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_ja">日本語</string>
+    <string name="lang_ko">한국어</string>
+    <string name="lang_ru">Русский</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">配色方案</string>
+    <string name="settings_theme_desc">浅色 / 深色 / 淡蓝色 / 淡粉色</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_blue">淡蓝色</string>
+    <string name="theme_pink">淡粉色</string>
+    <string name="settings_authorization">授权</string>
+    <string name="settings_default_grant">默认授权行为</string>
+    <string name="grant_ask">询问</string>
+    <string name="grant_deny">静默拒绝</string>
+    <string name="grant_once">临时授予</string>
+    <string name="grant_ask_desc">新应用请求 root 时弹窗询问</string>
+    <string name="grant_deny_desc">不发通知，直接拒绝</string>
+    <string name="grant_once_desc">授予一次操作，用完即失效</string>
+    <string name="settings_notify_request">通知授权请求</string>
+    <string name="settings_notify_desc">有新请求时发送通知</string>
+    <string name="grant">授予</string>
+    <string name="revoke">撤销</string>
+    <string name="granted">已授权</string>
+    <string name="not_granted">未授权</string>
+    <string name="authorize_root">授予超级用户权限</string>
+    <string name="revoke_root">撤销超级用户权限</string>
+    <string name="confirm_grant">确认授予</string>
+    <string name="confirm_grant_msg">将「%s」加入超级用户名单，是否继续？</string>
+    <string name="settings_hide_traces">隐藏内核痕迹</string>
+    <string name="settings_hide_traces_desc">从模块链表/符号表/系统目录中摘除自身</string>
+    <string name="settings_verbose_log">详细日志</string>
+    <string name="settings_verbose_log_desc">记录提权窗口（会增加留痕）</string>
+    <string name="settings_maintenance">维护</string>
+    <string name="settings_revoke_all">撤销全部授权</string>
+    <string name="flash_title">刷入</string>
+    <string name="flash_install_method">安装方式</string>
+    <string name="flash_warning">刷机需谨慎，请做好全套备份与救砖方案</string>
+    <string name="flash_mode_local">选择本地镜像修补</string>
+    <string name="flash_mode_local_desc">LKM 模式，用你自己的 init_boot / boot 镜像</string>
+    <string name="flash_mode_direct">直接安装到设备</string>
+    <string name="flash_mode_direct_desc">已有 root 时，自动读取并写入 init_boot 分区</string>
+    <string name="flash_image">镜像</string>
+    <string name="flash_pick_image">选择镜像文件</string>
+    <string name="flash_not_selected">未选择</string>
+    <string name="flash_backup_before">修补前备份原镜像</string>
+    <string name="flash_backup_desc">保存到 App 私有目录，出问题可恢复</string>
+    <string name="flash_image_info">镜像信息</string>
+    <string name="flash_next">下一步</string>
+    <string name="flash_guide">查看刷入指引</string>
+    <string name="flash_tip">点此进行刷入或安装工作\n（点击上方 %s 卡片开始）</string>
+    <string name="patch_title">正在修补</string>
+    <string name="patch_preparing">准备中…</string>
+    <string name="install">安装</string>
+    <string name="cancel">取消</string>
+    <string name="version">版本</string>
+    <string name="working_mode">工作模式</string>
+    <string name="no_superuser">没有应用被授予超级用户权限</string>
+    <string name="no_modules">没有已安装的模块</string>
+    <string name="install_module">安装模块</string>
+    <string name="uid">UID</string>
+    <string name="author">作者</string>
+    <string name="description">描述</string>
+    <string name="module_preview">模块预览</string>
+    <string name="pick_file_via">通过 %s 选择模块包</string>
+    <string name="mt_manager">MT 管理器</string>
+    <string name="system_picker">系统文件选择器</string>
+    <string name="search_hint">搜索应用名或包名</string>
+    <string name="no_result">没有匹配的应用</string>
+    <string name="app_detail">应用详情</string>
+    <string name="installed_at">安装时间</string>
+    <string name="updated_at">更新时间</string>
+    <string name="app_version">版本</string>
+    <string name="target_sdk">目标 SDK</string>
+    <string name="status">状态</string>
+    <string name="app_detail_grant_hint">授权后该应用可执行需要 root 的操作</string>
+    <string name="kpm_title">KernelPatch 模块</string>
+    <string name="kpm_engine">KPM 引擎</string>
+    <string name="kpm_ready">就绪</string>
+    <string name="kpm_not_ready">未就绪</string>
+    <string name="kpm_install">安装 KPM</string>
+    <string name="kpm_load">加载</string>
+    <string name="kpm_unload">卸载</string>
+    <string name="kpm_loaded">已加载</string>
+    <string name="kpm_not_loaded">未加载</string>
+    <string name="kpm_empty">还没有 KPM 模块</string>
+    <string name="kpm_hint">KPM 是 KernelPatch Module，运行时打补丁到内核，卸载后不留痕</string>
+    <string name="kpm_engine_not_connected">KernelPatch 引擎未接入</string>
+    <string name="about_project_home">项目主页</string>
+    <string name="about_license">开源协议</string>
+    <string name="about_slogan">%s · 影子权限</string>
+    <string name="header_version">版本: -</string>
+    <string name="header_kernel">内核: -</string>
+    <string name="power_reboot">重启</string>
+    <string name="power_soft_reboot">软重启（仅重启界面）</string>
+    <string name="power_recovery">重启到 Recovery</string>
+    <string name="power_bootloader">重启到 Bootloader</string>
+    <string name="power_shutdown">关机</string>
+    <string name="confirm_power_msg">确认执行「%1$s」？\n\n当前 root 来源：%2$s</string>
+    <string name="toast_revoked">已撤销 %s</string>
+    <string name="toast_granted">已授予 %s</string>
+    <string name="app_detail_revoke_confirm">确认撤销「%s」的超级用户权限？</string>
+    <string name="theme_picker_title">配色方案</string>
+    <string name="mode_picker_title">默认授权行为</string>
+    <string name="toast_exec_failed">执行失败（需要 root 权限）</string>
+    <string name="toast_redetecting">正在重新检测…</string>
+    <string name="toast_detect_again">重新检测…</string>
+    <string name="home_flashed">已刷入</string>
+    <string name="home_enabled_kernel">已启用 · 内核 %s</string>
+    <string name="toast_switch_failed">切换失败：%s</string>
+    <string name="toast_via_mt">通过 MT 管理器选择</string>
+    <string name="toast_no_picker">没有可用的文件选择器</string>
+    <string name="toast_read_failed">读取失败：%s</string>
+    <string name="kpm_preview">KPM 预览</string>
+    <string name="label_file">文件：%s</string>
+    <string name="toast_kpm_pending">安装通道待 KPM 引擎接入</string>
+    <string name="title_unrecognized_module">无法识别模块包</string>
+    <string name="toast_kernel_pending">安装通道待内核模块接入</string>
+    <string name="revoke_all_msg">将清除所有已授予的超级用户权限，此操作不可撤销。</string>
+    <string name="toast_revoked_all">已撤销全部授权</string>
+    <string name="toast_direct_needs_root">直接安装需要已有 root，当前先用本地镜像模式</string>
+    <string name="toast_pick_image_first">先选择镜像文件</string>
+    <string name="unit_bytes">%s 字节</string>
+    <string name="patch_auto">自动修补中…</string>
+    <string name="err_file_missing">文件不存在: %s</string>
+    <string name="reading">读取中…</string>
+    <string name="patching">修补中…</string>
+    <string name="in_progress">进行中… %s%%</string>
+    <string name="flash_guide_title">刷入指引</string>
+    <string name="ok">确定</string>
+    <string name="run">执行</string>
+    <string name="kmi_unknown">无法识别内核版本</string>
+    <string name="kmi_unsupported">您的设备暂时不支持 %s</string>
+    <string name="kmi_supported">已支持 · %s</string>
+    <string name="kmi_supported_custom">已支持 · %s（定制内核专用版）</string>
+    <string name="kmi_no_info">读不到内核版本，无法判断模块是否匹配。\n如果设备信息里能看到完整内核版本，请反馈给我们。</string>
+    <string name="mode_builtin">内置</string>
+    <string name="mode_kernel">内核</string>
+
+    <string name="shadow_title">影子权限</string>
+    <string name="shadow_loading">正在读取内核模块状态…</string>
+    <string name="shadow_module_section">内核模块</string>
+    <string name="shadow_stats_section">运行统计</string>
+    <string name="shadow_token_section">授权令牌</string>
+    <string name="shadow_copy">复制令牌</string>
+    <string name="shadow_note_title">说明</string>
+    <string name="shadow_note_body">影子权限不换进程的 uid：进程始终是普通用户，只在真正需要权限的那一次系统调用内临时提权，调用结束立刻还原。\n\n内核不保存任何授权名单。判断依据是进程自己内存里 0x1000000000 处的 32 字节令牌，令牌由 uid 派生，同一个 uid 每次得到相同的结果。\n\n因此令牌只应由管理器读出后注入目标进程，不应交给目标进程自己读取——否则任何应用都能给自己授权。</string>
+    <string name="shadow_uid_fmt">当前进程 uid：%1$d</string>
+    <string name="shadow_not_connected">内核模块未连接</string>
+    <string name="shadow_need_root">需要 root 才能读取令牌</string>
+    <string name="shadow_health_ok">提权已生效（本设计不撤销，还原次数恒为 0 属正常）</string>
+    <string name="shadow_health_leak">次数不配平（本设计不撤销，还原次数恒为 0 属正常，不是泄漏）</string>
+    <string name="shadow_copied">令牌已复制</string>
+
+    <string name="tab_shadow">影子用户</string>
+    <string name="tab_launcher">启动器</string>
+    <string name="shadow_intro_title">什么是影子用户</string>
+    <string name="shadow_intro_body">传统超级用户给的是一个 root 身份：App 起一个 uid 0 的进程并一直占着。那个进程在 ps 里一目了然，也就是被检测的根源。\n\n影子用户不一样。App 的 uid 始终不变，只在真正需要权限的那一次系统调用内临时提权，调用结束立刻还原。ps 里看不出任何异常，也没有 su 二进制和白名单文件。\n\n一句话：传统超级用户解决“你是谁”，影子用户解决“这一次调用按谁执行”。</string>
+    <string name="welcome_title">欢迎使用影核</string>
+    <string name="welcome_body">影核是围绕影子权限构建的第四代 root 框架。\n\n· 影子用户——给 App 影子权限，而不给它 uid 0\n· 内核模块——特权核心，展示后端和运行统计\n· 模块 / KPM——内核模块槽位\n· 启动器——以影子权限运行 .sh 等文件\n\n右上角的电源按钮用来修补刷入，右侧菜单里有设备信息和关于。</string>
+    <string name="welcome_start">开始使用</string>
+    <string name="launcher_prompt_title">启用脚本启动器？</string>
+    <string name="launcher_prompt_body">如果您要使用本管理器来运行游戏辅助，请选择“是”。\n\n启用后底部导航会多出“启动器”，可以直接选择 .sh / .ko 等文件并以影子权限执行。\n\n以后可随时在设置里开启或关闭。</string>
+    <string name="launcher_prompt_yes">是，启用</string>
+    <string name="launcher_prompt_no">暂不</string>
+    <string name="settings_launcher_title">脚本启动器</string>
+    <string name="settings_launcher_desc">在底部导航显示“启动器”入口</string>
+    <string name="launcher_title">启动器</string>
+    <string name="launcher_empty">还没有添加文件。\n点下方按钮选择 .sh / .ko 或其他文件。</string>
+    <string name="launcher_pick">选择文件</string>
+    <string name="launcher_open_mt">用 MT 管理器打开</string>
+    <string name="launcher_run">执行</string>
+    <string name="launcher_remove">移除</string>
+    <string name="launcher_note">文件会被复制到应用私有目录，并以影子权限执行。选文件用系统文件选择器；安装了 MT 管理器会多一个快捷入口。</string>
+    <string name="launcher_added">已添加</string>
+    <string name="launcher_no_mt">未安装 MT 管理器</string>
+    <string name="launcher_run_start">正在执行…</string>
+    <string name="launcher_run_done">执行完成</string>
+    <string name="launcher_run_fail">执行失败</string>
+    <string name="shadow_su_title">与传统超级用户的关系</string>
+    <string name="shadow_su_body">传统超级用户（su）把进程变成 uid 0。任何期望 su 的工具都能用，但 uid 0 的进程很容易被检测。\n\n影子权限走另一条路：进程保持自己的 uid，只有需要权限的那几个系统调用在执行期间被提权。\n\n按 su 写的工具（文件管理器的 root 模式、终端、调 su 的脚本）在只有影子权限时用不了，它们需要真的 su 通道。按影子 API 写的 App 完全不需要 su。</string>
+
+    <string name="shadow_intro_hint">点击查看：影子权限和传统超级用户的区别</string>
+
+    <string name="launcher_note_mt">安装了 MT 管理器将默认启用 MT 管理器；只支持 .sh 与 .ko 文件。</string>
+    <string name="launcher_only_shko">只支持 .sh 和 .ko 文件</string>
+    <string name="launcher_choose_way">选择文件方式</string>
+    <string name="launcher_pick_mt">MT 管理器</string>
+    <string name="launcher_pick_sys">系统选择器</string>
+    <string name="launcher_share_hint">在 MT 管理器里长按文件 → 分享 → 影核</string>
+    <string name="terminal_running">运行中</string>
+    <string name="terminal_started">开始执行 %1$s</string>
+    <string name="terminal_exited">已退出（代码 %1$d）</string>
+    <string name="terminal_stopped">已停止</string>
+    <string name="terminal_not_running">脚本未在运行</string>
+    <string name="terminal_input_hint">输入后回车发送…</string>
+    <string name="terminal_send">发送</string>
+    <string name="terminal_paste">粘贴</string>
+    <string name="terminal_stop">停止</string>
+    <string name="terminal_kill_confirm">脚本还在运行，确定停止吗？</string>
+    <string name="terminal_clip_empty">剪贴板为空</string>
+
+    <string name="terminal_err_not_shko">只能执行 .sh 和 .ko 文件</string>
+    <string name="terminal_err_no_root">加载 .ko 需要 root，当前还没有 root 通道</string>
+    <string name="terminal_err_no_file">文件不存在</string>
+    <string name="terminal_err_start_failed">启动失败：%1$s</string>
+    <string name="terminal_menu_title">输出操作</string>
+    <string name="terminal_menu_copy">复制全部</string>
+    <string name="terminal_menu_clear">清空</string>
+    <string name="terminal_menu_save">保存日志</string>
+    <string name="terminal_copied">已复制</string>
+    <string name="terminal_cleared">已清空</string>
+    <string name="terminal_saved">已保存为 %1$s</string>
+    <string name="terminal_save_fail">保存失败</string>
+
+    <string name="guard_blocked_title">已阻止执行</string>
+    <string name="guard_blocked_body">这个脚本里有会破坏系统的操作，已拒绝运行：\n\n%1$s</string>
+    <string name="guard_warn_title">脚本包含危险操作</string>
+    <string name="guard_warn_body">检测到以下内容，请先确认：\n\n%1$s\n\n确定要继续执行吗？</string>
+    <string name="guard_run_anyway">仍要执行</string>
+    <string name="guard_note">这是静态文本检查；经过混淆或运行时拼接的命令，这里拦不住。</string>
+
+    <string name="launcher_menu_title">文件操作</string>
+    <string name="launcher_menu_perm">权限</string>
+    <string name="launcher_menu_rename">重命名</string>
+    <string name="launcher_menu_view">查看内容</string>
+    <string name="launcher_menu_path">复制路径</string>
+    <string name="launcher_menu_remove">移除</string>
+    <string name="launcher_perm_current">当前：%1$s（%2$s）</string>
+    <string name="launcher_perm_applied">已设为 %1$s</string>
+    <string name="launcher_perm_fail">修改权限失败</string>
+    <string name="launcher_rename_hint">新文件名</string>
+    <string name="launcher_renamed">已重命名</string>
+    <string name="launcher_rename_fail">重命名失败</string>
+    <string name="launcher_path_copied">路径已复制</string>
+    <string name="launcher_view_empty">文件是空的</string>
+    <string name="launcher_view_binary">（二进制或无法读取的内容）</string>
+
+    <string name="terminal_exit_ok">正常结束</string>
+    <string name="terminal_exit_signal">被信号 %1$d 终止</string>
+    <string name="terminal_hint_perm">检测到权限被拒绝。常见原因：当前还没有 root / 影子权限，或目标文件属于别的应用。</string>
+    <string name="terminal_hint_notfound">有命令或路径不存在，请检查脚本里的命令名和路径。</string>
+    <string name="terminal_hint_count">（共 %1$d 处拒绝）</string>
+    <string name="terminal_hint_title">诊断</string>
+
+    <string name="launcher_mkdir">新建文件夹</string>
+    <string name="launcher_root">根目录</string>
+    <string name="launcher_dir_empty">这个文件夹是空的</string>
+    <string name="launcher_mkdir_hint">文件夹名</string>
+    <string name="launcher_mkdir_fail">创建文件夹失败</string>
+    <string name="launcher_delete_confirm">删除「%1$s」？\n\n文件夹会连同里面的东西一起删掉。</string>
+    <string name="launcher_enter_fail">无法打开这个文件夹</string>
+    <string name="perm_who">身份</string>
+    <string name="perm_read">读</string>
+    <string name="perm_write">写</string>
+    <string name="perm_exec">执行</string>
+    <string name="perm_owner">所有者</string>
+    <string name="perm_group">用户组</string>
+    <string name="perm_other">其他</string>
+    <string name="editor_save">保存</string>
+    <string name="editor_saved">已保存</string>
+    <string name="editor_unsaved">有未保存的修改</string>
+    <string name="editor_save_ok">已保存</string>
+    <string name="editor_save_fail">保存失败</string>
+    <string name="editor_empty">空文件</string>
+    <string name="editor_tab">制表符</string>
+    <string name="editor_comment">注释</string>
+    <string name="editor_lines">%1$d 行</string>
+    <string name="editor_leave_confirm">有未保存的修改，确定放弃吗？</string>
+    <string name="editor_discard">放弃修改</string>
+    <string name="guard_save_confirm">内容里有会破坏系统的操作，确定保存吗？\n\n%1$s</string>
+
+    <string name="launcher_menu_edit">编辑内容</string>
+
+    <string name="launcher_store_label">存放位置</string>
+
+    <string name="run_mode_title">%1$s\n用什么身份执行？</string>
+    <string name="run_mode_normal">普通权限</string>
+    <string name="run_mode_normal_desc">以应用自身的 uid 运行。应用访问不到的东西一律拒绝。</string>
+    <string name="run_mode_root">root 权限</string>
+    <string name="run_mode_root_desc">通过 su 执行。可以访问系统任意文件。</string>
+    <string name="run_mode_root_denied">su 存在但还没给本应用授权，执行时会请求。</string>
+    <string name="run_mode_no_su">当前设备没有 su，root 权限不可用。</string>
+    <string name="run_mode_remember">记住我的选择</string>
+    <string name="run_mode_exec">执行</string>
+    <string name="run_mode_reset">每次都问（重置）</string>
+    <string name="run_mode_forgotten">下次会重新询问</string>
+    <string name="run_mode_normal_short">普通</string>
+    <string name="run_mode_root_short">root</string>
+    <string name="terminal_as_user">执行身份：%1$s</string>
+
+    <string name="tab_rootuser">超级用户</string>
+    <string name="rootuser_title">超级用户</string>
+    <string name="rootuser_checking">检测中…</string>
+    <string name="rootuser_source">root 来源</string>
+    <string name="rootuser_su_path">su 路径</string>
+    <string name="rootuser_grant">授权状态</string>
+    <string name="rootuser_what_title">什么是超级用户</string>
+    <string name="rootuser_what_body">超级用户（su）是传统的提权方式：App 请求 root，授权后进程的 uid 真的变成 0，从此可以看到和修改系统上的任何东西——没有任何边界。\n\n正因为没有边界，一旦某个拿到 root 的 App 出问题（被篡改、写错路径、被远程利用），代价就是整台设备。这也是我们做「影子权限」的原因。</string>
+    <string name="rootuser_compare_title">和影子用户的区别</string>
+    <string name="rootuser_compare_body">· 进程 uid\n    超级用户：真的变成 0，直到进程退出\n    影子用户：始终是原值，只是系统调用被放行\n\n· 权限范围\n    超级用户：全部\n    影子用户：只有窗口里放行的那些\n\n· 内核留痕\n    超级用户：保存授权名单\n    影子用户：不保存，只认内存里的令牌\n\n· 被检测难度\n    超级用户：容易，uid 一眼看出来\n    影子用户：难，进程自己看到的还是原 uid\n\n· 跨 exec\n    超级用户：一直保持\n    影子用户：当前会丢（路径 B 待做）\n\n· 能不能跑 su 工具\n    超级用户：能\n    影子用户：不能</string>
+    <string name="rootuser_when_title">什么时候用哪个</string>
+    <string name="rootuser_when_body">要用 MT 管理器的 root 模式、Termux、或者各种按 su 写的脚本 → 用超级用户。\n\n只是想让某个 App 读一下 /data 里的配置文件，又不想让它整台设备都能动 → 用影子用户。\n\n两者不冲突。但要说清楚：超级用户这条通道现在还没打通——管理器自己还没拿到 root，所以这一页目前只能读状态，还不能管理授权名单。</string>
+
+    <string name="rootuser_found">已检测到</string>
+    <string name="rootuser_not_found">未检测到</string>
+    <string name="rootuser_granted">已授权</string>
+    <string name="rootuser_denied">未授权</string>
+    <string name="rootuser_no_su">无 su</string>
+    <string name="rootuser_unknown_need_root">需 root 才能读取</string>
+    <string name="rootuser_unknown_flavor">未知</string>
+    <string name="rootuser_hint_granted">su 可用。启动器可以用 root 跑脚本——点脚本后选「root 权限」。</string>
+    <string name="rootuser_hint_denied">su 存在，但本应用还没被授权。去 root 管理器里放行后重开本页。</string>
+    <string name="rootuser_hint_none">这台设备上没找到 su。当前只能用影子权限提权。</string>
+
+    <string name="grant_mode_title">%1$s\n授权方式</string>
+    <string name="grant_mode_shadow">影子用户（uid 不变）</string>
+    <string name="grant_mode_shadow_desc">拿到完整能力，但 uid 保持原值。程序看不出它有 root。</string>
+    <string name="grant_mode_super">超级用户（uid 变 0）</string>
+    <string name="grant_mode_super_desc">影子权限 + 可写授权表。App 自己的 uid 永远不变；它启动的 su 子进程是真 uid 0，能干任何事。</string>
+    <string name="grant_failed">授权失败：%1$s</string>
+    <string name="revoke_failed">撤销失败：%1$s</string>
+    <string name="granted_shadow">已授权（影子）</string>
+    <string name="granted_super">已授权（超级用户）</string>
+
+    <string name="mod_status_title">内核模块</string>
+    <string name="mod_checking">检测中…</string>
+    <string name="mod_load">加载</string>
+    <string name="mod_unload">卸载</string>
+    <string name="mod_loaded">已加载</string>
+    <string name="mod_not_found">未找到</string>
+    <string name="mod_hint_loaded">模块正在运行，下面的授权立即生效。</string>
+    <string name="mod_hint_missing">没有找到 sk_root 模块。没有它，下面所有授权都不会生效。点「加载」需要 root。</string>
+    <string name="mod_load_ok">模块已加载</string>
+    <string name="mod_load_fail">加载失败：%1$s</string>
+    <string name="mod_unload_ok">模块已卸载</string>
+    <string name="mod_unload_fail">卸载失败：%1$s</string>
+    <string name="mod_need_root">当前没有 root，无法加载模块</string>
+
+    <string name="no_rootuser_apps">还没有以超级用户方式授权的应用</string>
+
+    <string name="mod_remove">卸载</string>
+    <string name="mod_remove_title">卸载 %1$s？</string>
+    <string name="mod_remove_msg">模块会被打上卸载标记，下次开机会真正删除。</string>
+    <string name="mod_remove_ok">%1$s 已标记为卸载</string>
+    <string name="mod_remove_failed">卸载失败：%1$s</string>
+
+    <string name="um_title">UM 模块</string>
+    <string name="um_hint">加密保存在 /data/adb/umbral/um，开机自动解密加载。支持纯规则与字节码两种载荷。点一下应用，长按删除。</string>
+    <string name="um_empty">还没有 UM 模块</string>
+    <string name="um_import">导入 UM 模块</string>
+    <string name="um_import_ok">已导入 %1$s</string>
+    <string name="um_import_fail">导入失败：%1$s</string>
+    <string name="um_apply_ok">已应用 %1$s</string>
+    <string name="um_apply_fail">应用失败：%1$s</string>
+    <string name="um_delete">删除</string>
+    <string name="um_delete_title">删除 %1$s？</string>
+    <string name="um_delete_msg">模块文件会从磁盘上移除。</string>
+    <string name="um_delete_fail">删除失败</string>
+    <string name="um_menu">UM 模块</string>
+    <string name="um_nav">UM</string>
+    <string name="um_intro_title">UM 是什么</string>
+    <string name="um_intro_body" formatted="false">简单说：让某个 App 看不见某个文件，别的 App 和系统照常能看见。
+
+和普通模块的区别：普通模块是往磁盘放文件、要重启；UM 不改磁盘、不用重启，只骗过「查看权限」那一下。</string>
+    <string name="um_intro_more" formatted="false">怎么用 ▾</string>
+    <string name="um_intro_full" formatted="false">【六个判定点】内核里能拦的六个地方，现在做到了这些：
+
+1. 文件可见性 ✅
+   让指定 App 打开某个文件时得到「不存在 / 拒绝访问 / 不允许 / 强制放行」
+
+2. 文件属性 ✅
+   让指定 App 看到假的大小、假的权限，别人看到真实值
+
+3. 目录列表 ✅
+   让指定 App 里 ls / 文件管理器根本列不出这个条目
+
+4. 文件内容 ✅
+   empty：读出来是 0 字节（像空文件）
+   zero ：读出来是一串 0x00
+
+5. 进程可见性 ✅
+   让指定 App 的 ps / ls /proc 里看不到某个进程
+   写法：proc 进程号 目标App的uid hide
+
+6. 系统属性 ⚠️ 受限
+   getprop 读的是系统属性内存区，不读文件，内核钩子够不到。
+   只能伪造 build.prop 这类文件的读取内容（用判定点 4 的 empty/zero），
+   骗不过真正的 getprop。要彻底做需要用户态框架（zygisk / LSPosed）。
+
+【做不到】
+· 不能改 App 内部的功能（那是 LSPosed 干的事）
+· 不能改系统属性的 getprop 结果
+· 不能伪造 USB 调试开关、Bootloader 解锁状态、TEE 认证
+
+【怎么写一条规则】
+按文件：uid 数字 dev 数字 ino 数字 动作
+按进程：proc 进程号 目标uid 动作
+
+动作可以是：hide / deny / eperm / ok / empty / zero
+
+例子：
+  uid 10560 dev 65082 ino 1073146 hide
+  proc 4321 10560 hide
+
+数字怎么来：
+· uid：这个 App 的用户 ID
+· dev 和 ino：终端执行 stat -c "%%d %%i" 文件路径
+
+【导入步骤】
+1. 写好规则存成 .txt
+2. 点下面「导入 UM 模块」，选中那个 txt
+3. 应用会自动加密保存
+4. 在列表里点一下它，立刻生效
+
+【说明】
+导入时明文会被加密，磁盘上不留明文。已经是 .umb 的加密文件也能直接导入。</string>
+    <string name="um_intro_collapse" formatted="false">收起 ▴</string>
+    <string name="settings_export_log">导出日志</string>
+    <string name="settings_export_log_desc">收集所有功能的运行状态，全部中文，可分享</string>
+    <string name="export_log_running">正在收集日志…</string>
+    <string name="export_log_fail">导出失败，请重试</string>
+    <string name="export_log_done">日志已导出</string>
+    <string name="export_log_share">分享</string>
+    <string name="export_log_hint">这份报告包含所有功能的运行状态，可直接发给开发者。</string>
+    <string name="um_tpl_open">UM 模板库（一键隐藏）</string>
+    <string name="um_tpl_pick">选择模板</string>
+    <string name="um_tpl_target">对哪个应用生效？</string>
+    <string name="um_tpl_done">已应用 %1$d 条规则</string>
+    <string name="um_tpl_none">模板里的路径在这台设备上都不存在</string>
+    <string name="um_repo_title">UM 模块仓库</string>
+    <string name="um_repo_hint">选择模板后，再选择要对其生效的应用（可搜索、可多选）</string>
+    <string name="um_repo_search">搜索应用名 / 包名 / uid</string>
+    <string name="um_repo_empty">仓库里还没有模板</string>
+    <string name="um_repo_no_match">没有匹配的应用</string>
+    <string name="um_repo_apply">对选中的 %1$d 个应用生效</string>
+    <string name="um_repo_applying">正在下发…</string>
+    <string name="um_repo_open">仓库</string>
+    <string name="um_repo_saved">已生成 UM 模块</string>
+    <string name="um_repo_go_um">去 UM 页看</string>
+    <string name="settings_guard">系统守护</string>
+    <string name="settings_guard_desc">拦截任何进程修改系统关键分区，并记录肇事者</string>
+    <string name="guard_alert_title">检测到危险操作</string>
+    <string name="guard_alert_body">您的设备可能正在受到危险攻击，您的设备可能遭到摧毁。\n影核已为您自动保护您的设备，已拦截以下操作：\n\n</string>
+    <string name="guard_alert_ok">我知道了</string>
+    <string name="guard_alert_clear">清空记录</string>
+    <string name="guard_on">系统守护已开启</string>
+    <string name="guard_off">系统守护已关闭</string>
+    <string name="guard_unsupported">当前内核不支持系统守护（需要 v0.73 以上）</string>
+    <string name="settings_full_shadow">完全影子</string>
+    <string name="settings_full_shadow_desc">在授权页多出「完全影子」选项（MAC 层零干预，最隐蔽）</string>
+    <string name="grant_mode_full">完全影子</string>
+    <string name="grant_mode_full_desc">只绕 DAC 不碰 SELinux，最隐蔽；但 /data/adb、/system 这类路径要调专用接口</string>
+    <string name="full_shadow_card_title">完全影子是什么</string>
+    <string name="full_shadow_card_body">完全影子是什么
+
+普通影子模式会「把 SELinux 的拒绝改成放行」，行为上留一点痕迹。
+完全影子完全不碰 SELinux：它只绕过文件权限，SELinux 该拒的照拒。
+所以在 MAC 层看不到任何异常 —— 和一台没 root 的手机一模一样。
+
+代价：/data/adb、/system 这些 SELinux 本来就拒绝的路径，直接读会失败，要走影核的内核接口 /proc/sk/io。
+
+【怎么用 · shell】
+printf \'read /data/adb/umbral/manager.uid\' | dd of=/proc/sk/io conv=notrunc
+cat /proc/sk/io
+
+printf \'list /data/adb/umbral/um\' | dd of=/proc/sk/io conv=notrunc
+cat /proc/sk/io
+
+printf \'write /data/adb/t.txt
+hello
+\' | dd of=/proc/sk/io conv=notrunc
+
+【怎么用 · App】
+用 ParcelFileDescriptor.open(f, MODE_WRITE_ONLY) 写请求，
+再用普通读取方式读回结果。
+不能用 FileOutputStream 直接 new，它会带 O_TRUNC，proc 文件会拒绝。</string>
+    <string name="mod_action_run">执行 action.sh</string>
+    <string name="vivo_guard">Vivo/iQOO 反 root 对抗</string>
+    <string name="vivo_guard_desc">让系统安全中心看不到 root 痕迹</string>
+    <string name="um_reapply">重新应用</string>
+    <string name="um_edit_apps">修改生效应用</string>
+    <string name="power_edl">重启到 9008（紧急下载模式）</string>
+    <string name="power_fastboot">重启到 Fastboot（引导模式）</string>
+    <string name="privacy_title">隐私与合规</string>
+    <string name="privacy_body">本应用不联网、不上报、不收集任何数据。\n\n· 没有任何网络权限，也不含统计/崩溃上报 SDK\n· 授权名单、模块、日志全部只存在本机 /data/adb/umbral/ 下\n· 日志只写本地文件，不会上传，可随时在设置里清空\n· 卸载后 /data/adb/umbral/ 由系统保留，需要彻底清除请手动删除该目录\n\n内核侧：/proc/umbral 与 /proc/umbral_kmem 只在本机内存中存在，不落盘、不外发。</string>
+</resources>

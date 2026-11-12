@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/page_padding"
+    android:paddingEnd="@dimen/page_padding"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!--
+        卡片结构（对齐 Magisk / KernelSU 的信息密度）：
+          第一行  名称 ………………………… 开关  删除
+          第二行  版本 · 作者 · 状态（待重启 / 可执行）
+          第三行起 描述，最多 4 行，不再挤成两行
+
+        去掉了左边那个 46dp 的圆形图标 —— 它占了六分之一宽度，
+        却只放一个通用图标，把介绍文字挤没了。
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:paddingStart="16dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_module_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/sk_on_surface"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <Switch
+                android:id="@+id/sw_module"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" />
+
+            <ImageView
+                android:id="@+id/btn_module_remove"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="2dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_delete"
+                android:tint="?attr/sk_on_surface_variant"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="false"
+                android:contentDescription="@string/mod_remove" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_module_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="12sp"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tv_module_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:maxLines="8"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
+        <!--
+            执行按钮：只有模块带 action.sh 时才显示。
+            放在描述下面单独一行、左对齐 —— 不挤左上角那排（名称/开关/删除）。
+            这样卡片只在有脚本时才变高，其它模块不变。
+        -->
+        <Button
+            android:id="@+id/btn_module_action"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:layout_marginTop="8dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="@string/mod_action_run"
+            android:textSize="12sp"
+            android:textAllCaps="false"
+            android:background="@drawable/bg_card"
+            android:textColor="?attr/sk_primary"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

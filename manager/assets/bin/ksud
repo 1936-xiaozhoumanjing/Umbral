@@ -1,0 +1,33 @@
+#!/system/bin/sh
+# 影核 ksud 兼容壳 —— 把 KSU 的模块管理命令映射到文件操作
+MODDIR=/data/adb/modules
+
+case "$1" in
+  module)
+    case "$2" in
+      install)
+        echo "ksud module install: 请用影核管理器安装（此壳只做兼容占位）"
+        exit 0 ;;
+      enable)
+        [ -n "$3" ] && rm -f "$MODDIR/$3/disable" && echo "enabled $3"
+        exit 0 ;;
+      disable)
+        [ -n "$3" ] && touch "$MODDIR/$3/disable" && echo "disabled $3"
+        exit 0 ;;
+      uninstall|remove)
+        [ -n "$3" ] && touch "$MODDIR/$3/remove" && echo "will remove $3"
+        exit 0 ;;
+      list)
+        ls "$MODDIR" 2>/dev/null
+        exit 0 ;;
+    esac
+    exit 0 ;;
+  --version|-V)
+    echo "ksud (umbral compat) 1.0"
+    exit 0 ;;
+  su)
+    shift
+    exec /data/local/tmp/umbral/su "$@"
+    ;;
+esac
+exit 0

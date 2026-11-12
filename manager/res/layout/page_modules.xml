@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ListView
+        android:id="@+id/lv_modules"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:paddingBottom="88dp"
+        android:clipToPadding="false"
+        android:scrollbars="none" />
+
+    <TextView
+        android:id="@+id/tv_empty_modules"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="32dp"
+        android:text="@string/no_modules"
+        android:textColor="?attr/sk_on_surface_variant"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/fab_install"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        android:background="@drawable/bg_fab"
+        android:padding="16dp"
+        android:src="@drawable/ic_add"
+        android:tint="?attr/sk_primary"
+        android:elevation="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="@string/install_module" />
+</FrameLayout>

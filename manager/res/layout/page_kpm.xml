@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 引擎状态 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginStart="@dimen/page_padding"
+        android:layout_marginEnd="@dimen/page_padding"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card"
+        android:padding="16dp">
+
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_kpm"
+                android:tint="?attr/sk_primary" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/kpm_engine"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/sk_on_surface" />
+
+            <TextView
+                android:id="@+id/tv_kpm_engine_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/kpm_engine_not_connected"
+                android:textSize="12sp"
+                android:textColor="?attr/sk_on_surface_variant" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_kpm_engine_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="@string/kpm_not_ready"
+            android:textSize="12sp"
+            android:textColor="?attr/sk_chip_text" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/page_padding"
+        android:layout_marginEnd="@dimen/page_padding"
+        android:layout_marginBottom="8dp"
+        android:text="@string/kpm_hint"
+        android:textSize="12sp"
+        android:textColor="?attr/sk_on_surface_variant" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/lv_kpm"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:paddingBottom="88dp"
+            android:clipToPadding="false"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/tv_empty_kpm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="32dp"
+            android:text="@string/kpm_empty"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/fab_kpm"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="20dp"
+            android:background="@drawable/bg_fab"
+            android:padding="16dp"
+            android:src="@drawable/ic_add"
+            android:tint="?attr/sk_primary"
+            android:elevation="6dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/kpm_install" />
+    </FrameLayout>
+</LinearLayout>

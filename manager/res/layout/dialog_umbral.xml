@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自绘对话框
+
+  结构：
+    标题（可选）
+    正文（可选，可滚动）
+    自定义内容槽（给单选、权限九宫格这类用）
+    按钮行（主按钮填充色，次按钮描边）
+
+  为什么不用 AlertDialog 装自定义 View：
+  AlertDialog 的外框、标题区、按钮区都由系统画，样式跟随 ROM，
+  红魔上出来是直角黑框。这里整块自己画，圆角、间距、按钮形状全部可控。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_dialog"
+    android:paddingStart="22dp"
+    android:paddingEnd="22dp"
+    android:paddingTop="22dp"
+    android:paddingBottom="14dp">
+
+    <TextView
+        android:id="@+id/dlg_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/sk_on_surface"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <ScrollView
+        android:id="@+id/dlg_body_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/dlg_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?attr/sk_on_surface_variant"
+            android:textIsSelectable="true"
+            android:textSize="13sp" />
+    </ScrollView>
+
+    <!-- 自定义内容槽 -->
+    <FrameLayout
+        android:id="@+id/dlg_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical">
+
+        <TextView
+            android:id="@+id/dlg_btn_negative"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_btn_secondary"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="14sp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
+
+        <TextView
+            android:id="@+id/dlg_btn_neutral"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_btn_secondary"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:textColor="?attr/sk_on_surface"
+            android:textSize="14sp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
+
+        <TextView
+            android:id="@+id/dlg_btn_positive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_btn_primary"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:textColor="?attr/sk_on_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
+    </LinearLayout>
+</LinearLayout>

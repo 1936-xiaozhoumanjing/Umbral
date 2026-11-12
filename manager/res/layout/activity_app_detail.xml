@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/sk_surface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="20dp">
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_chevron_right"
+            android:rotation="180"
+            android:tint="?attr/sk_on_surface_variant"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="返回" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="@string/app_detail"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:textColor="?attr/sk_on_surface" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/page_padding">
+
+            <!-- 应用头部 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:paddingTop="24dp"
+                android:paddingBottom="24dp">
+
+                <ImageView
+                    android:id="@+id/iv_detail_icon"
+                    android:layout_width="88dp"
+                    android:layout_height="88dp"
+                    android:scaleType="fitCenter" />
+
+                <TextView
+                    android:id="@+id/tv_detail_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textSize="21sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/sk_on_surface"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp" />
+
+                <TextView
+                    android:id="@+id/tv_detail_pkg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="13sp"
+                    android:textColor="?attr/sk_on_surface_variant"
+                    android:singleLine="true"
+                    android:ellipsize="middle"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp" />
+            </LinearLayout>
+
+            <!-- 授权状态 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp">
+
+                <View
+                    android:id="@+id/v_status_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/dot_off" />
+
+                <TextView
+                    android:id="@+id/tv_detail_status"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:text="@string/not_granted"
+                    android:textSize="15sp"
+                    android:textColor="?attr/sk_on_surface" />
+            </LinearLayout>
+
+            <!-- 信息表 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="80dp"
+                        android:singleLine="true"
+                        android:text="UID"
+                        android:textSize="15sp"
+                        android:textColor="?attr/sk_on_surface" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_uid"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:text="-"
+                        android:textSize="13sp"
+                        android:textColor="?attr/sk_on_surface_variant" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="80dp"
+                        android:singleLine="true"
+                        android:text="@string/app_version"
+                        android:textSize="15sp"
+                        android:textColor="?attr/sk_on_surface" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_version"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:ellipsize="end"
+                        android:text="-"
+                        android:textSize="13sp"
+                        android:textColor="?attr/sk_on_surface_variant" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="80dp"
+                        android:singleLine="true"
+                        android:text="@string/installed_at"
+                        android:textSize="15sp"
+                        android:textColor="?attr/sk_on_surface" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_installed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:text="-"
+                        android:textSize="13sp"
+                        android:textColor="?attr/sk_on_surface_variant" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="80dp"
+                        android:singleLine="true"
+                        android:text="@string/updated_at"
+                        android:textSize="15sp"
+                        android:textColor="?attr/sk_on_surface" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_updated"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:text="-"
+                        android:textSize="13sp"
+                        android:textColor="?attr/sk_on_surface_variant" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/sk_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="80dp"
+                        android:singleLine="true"
+                        android:text="@string/target_sdk"
+                        android:textSize="15sp"
+                        android:textColor="?attr/sk_on_surface" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_sdk"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:text="-"
+                        android:textSize="13sp"
+                        android:textColor="?attr/sk_on_surface_variant" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 授权按钮 -->
+            <TextView
+                android:id="@+id/btn_authorize"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_btn_primary"
+                android:gravity="center"
+                android:text="@string/authorize_root"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/sk_on_primary"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="@string/app_detail_grant_hint"
+                android:textSize="12sp"
+                android:textColor="?attr/sk_on_surface_variant" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

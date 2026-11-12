@@ -1,0 +1,32 @@
+#!/system/bin/sh
+# 影核 resetprop 兼容壳
+#   读：先从 build.prop 抓，再退到 getprop
+#   写：记录到 /data/local/tmp/umbral/props.txt（内核侧未实现属性覆盖时只做记录）
+PROP_FILE=/data/local/tmp/umbral/props.txt
+
+if [ "$1" = "-w" ] || [ "$1" = "--wait" ]; then shift; fi
+
+if [ $# -eq 0 ]; then
+  cat "$PROP_FILE" 2>/dev/null
+  exit 0
+fi
+
+if [ $# -eq 1 ]; then
+  key="$1"
+  if [ -f "$PROP_FILE" ]; then
+    v=$(grep -m1 "^$key=" "$PROP_FILE" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$v" ]; then echo "$v"; exit 0; fi
+  fi
+  getprop "$key"
+  exit 0
+fi
+
+# 两个参数 = 设置
+key="$1"; val="$2"
+mkdir -p /data/local/tmp/umbral 2>/dev/null
+if [ -f "$PROP_FILE" ]; then
+  grep -v "^$key=" "$PROP_FILE" > "$PROP_FILE.tmp" 2>/dev/null
+  mv "$PROP_FILE.tmp" "$PROP_FILE" 2>/dev/null
+fi
+echo "$key=$val" >> "$PROP_FILE"
+exit 0
