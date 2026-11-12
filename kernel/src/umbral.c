@@ -94,7 +94,24 @@
 #define SK_PROMOTE_UID 0
 #endif
 
-#define SK_VERSION   "1.42.0-capmodule"
+/*
+ * SK_PROC_OPS_COMPAT
+ *
+ * struct proc_ops appeared in Linux 5.6; 5.4 still uses file_operations with
+ * different member names (open/read/write/release/llseek). Rather than fork the
+ * source per KMI, map the names here so one file builds for 5.4 .. 6.x.
+ */
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#define proc_ops	file_operations
+#define proc_open	open
+#define proc_read	read
+#define proc_write	write
+#define proc_release	release
+#define proc_lseek	llseek
+#endif
+
+#define SK_VERSION   "1.43.1-reclaim"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
@@ -2459,7 +2476,44 @@ static int sk_feature_open(struct inode *i, struct file *f);
 static int sk_feature_register(struct proc_dir_entry *dir);
 static ssize_t sk_feature_write(struct file *f, const char __user *ubuf, size_t len, loff_t *off);
 static bool sk_is_mgr_main_thread(void);
+
+
 static int sk_scan_for_manager(void);
+
+/*
+ * Periodic manager re-claim.
+ *
+ * Why: the manager's uid changes whenever the APK is reinstalled, and the grant
+ * table is restored from manager.uid at boot. A stale uid there locks the new
+ * APK out of /proc/umbral forever (root is also blocked, so it cannot fix it).
+ * Re-scanning every few seconds in process context is safe: this is exactly the
+ * work the boot path already does once.
+ */
+static void sk_scan_wq_fn(struct work_struct *w);
+static DECLARE_DELAYED_WORK(sk_scan_wq, sk_scan_wq_fn);
+static bool sk_scan_wq_on;
+
+static void sk_scan_wq_fn(struct work_struct *w)
+{
+	if (!sk_scan_wq_on)
+		return;
+	{
+		int u = sk_scan_for_manager();
+
+		/* 关键：扫到了必须真的写进授权表 —— 只打印等于没做 */
+		if (u > 0 && !sk_ugrant_add((u32)u, SK_GRANT_SUPER))
+			pr_info(SK_TAG "manager re-claimed uid=%d\n", u);
+	}
+	schedule_delayed_work(&sk_scan_wq, msecs_to_jiffies(5000));
+}
+
+static void sk_scan_wq_start(void)
+{
+	if (sk_scan_wq_on)
+		return;
+	sk_scan_wq_on = true;
+	schedule_delayed_work(&sk_scan_wq, msecs_to_jiffies(5000));
+}
 static int sk_claim_show(struct seq_file *m, void *v);
 static ssize_t sk_claim_write(struct file *f, const char __user *ubuf,
 			      size_t len, loff_t *off);
@@ -6808,6 +6862,7 @@ static void sk_late_fn(struct work_struct *w)
 
 	/* 第一层：扫进程名（最可靠） */
 	uid = sk_scan_for_manager();
+	sk_scan_wq_start();
 	if (uid > 0) {
 		/*
 		 * ★ 管理器必须给影子模式，不能给超级用户模式 ★
