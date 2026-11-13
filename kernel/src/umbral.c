@@ -111,7 +111,7 @@
 #define proc_lseek	llseek
 #endif
 
-#define SK_VERSION   "1.43.1-reclaim"
+#define SK_VERSION   "1.44.0-apkfix"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
@@ -4806,11 +4806,17 @@ static int sk_perm_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 		 * 那是过度设计，而且钩子里在原子上下文读用户态字符串，风险大。
 		 * 现在回到最朴素的做法：一个整数比较，不需要任何额外钩子。
 		 */
+		/*
+		 * system 属主的普通文件（APK/odex）一律保持真实 DAC 判定。
+		 * 必须在「特权 uid 放行」之前判断：旧代码要求 ino->i_sb 非空，
+		 * 一旦 superblock 指针不可见就掉进下面的无条件放行，
+		 * 于是 ART 的 access(base.apk, W_OK) 得到「可写」，
+		 * 报 Writable dex file，App 启动即崩。
+		 */
+		if (ino && __kuid_val(ino->i_uid) == 1000 && S_ISREG(ino->i_mode))
+			return 0;
+
 		if (sk_uid_privileged(__kuid_val(current_uid()))) {
-			if (ino && __kuid_val(ino->i_uid) == 1000
-			    && ino->i_sb
-			    && ino->i_sb->s_magic != PROC_SUPER_MAGIC)
-				return 0;	/* APK：保持原判定（护身符） */
 			regs_set_return_value(regs, 0);
 			return 0;
 		}
@@ -9262,6 +9268,7 @@ static int __init sk_root_init(void)
 	sk_resolve_commit_creds();
 	sk_resolve_secctx();
 	sk_btf_init();
+	sk_acc_register();
 	sk_um_bootload();
 
 	/*
