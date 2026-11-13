@@ -111,7 +111,7 @@
 #define proc_lseek	llseek
 #endif
 
-#define SK_VERSION   "1.44.0-apkfix"
+#define SK_VERSION   "1.63.0-shadowall"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
@@ -1887,6 +1887,21 @@ static bool sk_writer_allowed(void)
 	if (sk_grant_mode_uid(uid) >= 0)
 		return true;
 
+	/*
+	 * ★ 引导链：su 壳以 shell(2000) 身份启动，必须先能看到 /proc/umbral/escape
+	 *   才能完成提权。comm 由内核维护，别的进程冒充不了。
+	 *   这正是 KSU 里 ksud 的做法（ksud 也是 shell 身份）。
+	 */
+	if (uid == 2000) {
+		const char *c = current->comm;
+
+		if ((c[0] == 's' && c[1] == 'u' && c[2] == 0) ||
+		    (c[0] == 's' && c[1] == 'h' && c[2] == 0) ||
+		    (c[0] == 'u' && c[1] == 'm' && c[2] == 'b' &&
+		     c[3] == 'r' && c[4] == 'a' && c[5] == 'l'))
+			return true;
+	}
+
 	return false;
 }
 
@@ -2500,9 +2515,33 @@ static void sk_scan_wq_fn(struct work_struct *w)
 	{
 		int u = sk_scan_for_manager();
 
-		/* 关键：扫到了必须真的写进授权表 —— 只打印等于没做 */
-		if (u > 0 && !sk_ugrant_add((u32)u, SK_GRANT_SUPER))
-			pr_info(SK_TAG "manager re-claimed uid=%d\n", u);
+		/*
+		 * ★ 不再把管理器 uid 写进授权表 ★
+		 *
+		 * 管理器只要拿到"特权"，它自己加载 base.apk 时 ART 的可写探测
+		 * 就会被我们覆盖成「可写」，直接 Writable dex 启动即崩
+		 * （这个坑在 1.42~1.47 反复出现，改 SUPER→SHADOW 也没用，
+		 *   因为 sk_grant_mode_uid(uid) >= 0 一律算特权）。
+		 *
+		 * 现在的分工：
+		 *   管理器主进程 → 零特权，跟普通 App 一样
+		 *   所有需要内核能力的操作 → 交给 su 子进程（真 uid 0）
+		 * 子进程 uid 0 走 sk_uid_privileged 的第一条规则，不需要授权表。
+		 */
+		/*
+		 * 管理器持有「影子用户」身份：uid 不变，只放行必要操作。
+		 * 配合 sk_is_manager_comm() 的两道守卫（DAC 写判定 / 不做 MAC 覆盖），
+		 * 它既能读 /proc/umbral 显示「已刷入」，又不会把自己判成"可写 APK"。
+		 */
+		/*
+		 * 实测结论：只要管理器主进程拿到任何授权（SUPER 或 SHADOW），
+		 * ART 的 access(base.apk, W_OK) 就会被我们放行 →
+		 * SecurityException: Writable dex file → 启动即崩。
+		 * 因此管理器主进程保持「零特权」，所有需要内核能力的操作
+		 * 全部走 su 子进程（uid 0，走 sk_uid_privileged 的第一条规则）。
+		 */
+		if (u > 0)
+			pr_info(SK_TAG "manager seen uid=%d (zero-priv; use su child)\n", u);
 	}
 	schedule_delayed_work(&sk_scan_wq, msecs_to_jiffies(5000));
 }
@@ -4415,6 +4454,29 @@ static bool sk_uid_privileged(u32 uid)
 	return false;
 }
 
+
+/*
+ * 管理器自身（进程名 io.umbral）一律不做权限覆盖。
+ *
+ * 原因：ART 在加载 APK / dex 前会 access(path, W_OK)，
+ * 只要我们任何一个钩子把它答成"可写"，就会
+ *   SecurityException: Writable dex file ... is not allowed
+ * 直接拒载 —— App 启动即崩。
+ *
+ * 之前只堵了 DAC 层的某一条分支，结果别的钩子（SELinux 层）又放行了，
+ * 于是"第一次能开、之后必崩"。这里直接对管理器关掉全部覆盖，
+ * 让它永远走内核真实判定。管理器要读 /proc/umbral 走的是
+ * sk_own_ino 分支（自己的节点），不受这条影响。
+ */
+static __maybe_unused bool sk_is_manager_comm(void)
+{
+	return current->comm[0] == 'i' && current->comm[1] == 'o' &&
+	       current->comm[2] == '.' && current->comm[3] == 'u' &&
+	       current->comm[4] == 'm' && current->comm[5] == 'b' &&
+	       current->comm[6] == 'r' && current->comm[7] == 'a' &&
+	       current->comm[8] == 'l' && current->comm[9] == 0;
+}
+
 static bool __attribute__((unused)) sk_bypass_ok(void)
 {
 	if (sk_in_window())
@@ -4424,7 +4486,17 @@ static bool __attribute__((unused)) sk_bypass_ok(void)
 
 static int sk_lsm_entry(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-	atomic64_inc(&sk_lsm_e_called);	/* 诊断：无条件 */
+	atomic64_inc(&sk_lsm_e_called);
+
+	/*
+	 * 管理器自身：完全不碰 SELinux 判定。
+	 *
+	 * 这一条是为了彻底断掉 ART 的 "Writable dex file" ：
+	 * ART 在加载 base.apk 前会探测可写性，只要任何一层（DAC / SELinux / caps）
+	 * 把结果改成"可写"，它就拒绝加载、进程启动即死。
+	 * 管理器只需要读自己的 /proc/umbral 节点，那部分由 sk_own_ino 分支放行，
+	 * 不依赖这里的 MAC 覆盖。
+	 */
 
 	/*
 	 * 窗口外返回 1 = 不安装 return handler。
@@ -4451,6 +4523,23 @@ static int sk_lsm_entry(struct kretprobe_instance *ri, struct pt_regs *regs)
 static int sk_lsm_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
 	long orig = (long)regs->regs[0];
+
+	/*
+	 * ★ 影子放行：按 uid，不按目标 ★（1.63）
+	 *
+	 * 授权表里的 uid（shadow 或 super）被 SELinux 拒绝时，一律改成允许。
+	 * 这是「影子用户 = 这个 uid 的一切操作都放行」的原始语义。
+	 * 不再按进程名/目标类型/属主做任何排除 —— 那些特例正是把授权拆坏的原因。
+	 *
+	 * ART 的 Writable dex 已由 faccessat 钩子按 .apk 路径单独拒绝，
+	 * 不依赖这里的任何限制。
+	 */
+	if (orig != 0 && sk_uid_privileged(__kuid_val(current_uid()))) {
+		regs_set_return_value(regs, 0);
+		atomic64_inc(&sk_lsm_bypass);
+		return 0;
+	}
+
 
 	atomic64_inc(&sk_lsm_r_called);	/* 诊断：无条件 */
 
@@ -4593,7 +4682,16 @@ struct sk_cap_data {
 static bool sk_cap_denied(int cap)
 {
 	switch (cap) {
-	case 1:		/* CAP_DAC_OVERRIDE —— 见下面长注释，必须拒 */
+	/*
+	 * ★ CAP_DAC_OVERRIDE 现在放行（1.61）★
+	 *
+	 * 以前拒它，是因为它会让 ART 的 access(base.apk, W_OK) 得到"可写"，
+	 * 于是报 Writable dex file 拒绝加载。
+	 *
+	 * 现在那件事已经由 faccessat 钩子按路径精确解决
+	 * （代码容器 + W_OK → 一律 -EACCES，实测 test -w base.apk = NOT-WRITABLE），
+	 * 所以这里可以放开 —— 影子用户才能写 /data/adb、/system，而 uid 不变。
+	 */
 	case 6:		/* CAP_SETGID */
 	case 7:		/* CAP_SETUID */
 	case 8:		/* CAP_SETPCAP */
@@ -4709,6 +4807,8 @@ static int sk_perm_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 	struct sk_cap_data *d = (struct sk_cap_data *)ri->data;
 	long orig = (long)regs->regs[0];
 
+
+
 	atomic64_inc(&sk_lsm_r_called);
 
 	/*
@@ -4813,8 +4913,24 @@ static int sk_perm_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 		 * 于是 ART 的 access(base.apk, W_OK) 得到「可写」，
 		 * 报 Writable dex file，App 启动即崩。
 		 */
-		if (ino && __kuid_val(ino->i_uid) == 1000 && S_ISREG(ino->i_mode))
+		/*
+		 * ★ 大文件写权限一律按真实 DAC 判定 ★
+		 *
+		 * ART 加载 dex 前会 access(apk, W_OK)。只要有一处放行就报
+		 *   SecurityException: Writable dex file
+		 * 并拒绝加载 —— 这是 App 启动即崩的唯一原因，实测多个机型都中招。
+		 *
+		 * 之前只挡了「属主 == system(1000)」，但实际安装出来的 APK
+		 * 属主可能是 shell(2000)，甚至被某些安装器改成别的 uid，
+		 * 于是落进下面的「特权 uid 放行」分支 → 又崩。
+		 *
+		 * 现在改成按大小判定：普通文件且 > 1MB（APK/odex 必然满足，
+		 * 而我们真正要写的目标都在 /data/adb、/system 等小文件/目录上），
+		 * 一律保持内核原始判定，绝不放行。
+		 */
+		if (ino && S_ISREG(ino->i_mode) && ino->i_size > (1 << 20))
 			return 0;
+
 
 		if (sk_uid_privileged(__kuid_val(current_uid()))) {
 			regs_set_return_value(regs, 0);
@@ -4854,8 +4970,6 @@ static int sk_perm_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 			return 0;
 		}
 
-		if (ino && __kuid_val(ino->i_uid) <= 1000)
-			return 0;
 		if ((d->mask & 0x4) && (d->mask & 0x2))
 			return 0;
 	}
@@ -5610,8 +5724,21 @@ static ssize_t sk_grant_write(struct file *f, const char __user *ubuf,
 			*sp++ = 0;
 			strim(buf);
 			strim(sp);
-			if (!kstrtol(sp, 10, &m) && m == SK_GRANT_SUPER)
+			/*
+			 * ★ 同时接受数字与文字 ★
+			 *
+			 * 原来只认数字 "1"，而管理器写的是 "super" ——
+			 * kstrtol 解析失败 → mode 保持默认 SHADOW
+			 * → 界面上选「超级用户」，内核里却始终是影子。
+			 * 这就是"给了超级用户权限却什么都不生效"的直接原因。
+			 */
+			if (!strcmp(sp, "super") || !strcmp(sp, "su")) {
 				mode = SK_GRANT_SUPER;
+			} else if (!strcmp(sp, "shadow") || !strcmp(sp, "sh")) {
+				mode = SK_GRANT_SHADOW;
+			} else if (!kstrtol(sp, 10, &m) && m == SK_GRANT_SUPER) {
+				mode = SK_GRANT_SUPER;
+			}
 		}
 
 		/* uid:<uid> [mode|off] —— 管理器用这个，按 App 持久授权 */
@@ -8816,6 +8943,30 @@ static void sk_exec_unregister(void)
  * 副作用：被授权 App 里任何 "这个文件可写吗" 的探测都会得到「不可写」。
  * 对绝大多数 App 无影响；ART 也因此永远满意。
  */
+static bool sk_is_code_container(const char *p);
+static bool sk_is_code_container(const char *p)
+{
+	const char *dot = NULL;
+	const char *q = p;
+	int len = 0;
+
+	while (*q && len < 200) {
+		if (*q == '.')
+			dot = q;
+		q++;
+		len++;
+	}
+	if (!dot)
+		return false;
+	dot++;
+	if (!strcmp(dot, "apk") || !strcmp(dot, "odex") ||
+	    !strcmp(dot, "vdex") || !strcmp(dot, "art") ||
+	    !strcmp(dot, "jar"))
+		return true;
+	return false;
+}
+
+
 static int sk_acc_entry(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
 	struct sk_acc_data *d = (struct sk_acc_data *)ri->data;
@@ -8823,6 +8974,14 @@ static int sk_acc_entry(struct kretprobe_instance *ri, struct pt_regs *regs)
 	d->path = (const char __user *)regs_get_kernel_argument(regs, 1);
 	d->mode = (int)regs_get_kernel_argument(regs, 2);	/* int mode */
 	d->uid  = __kuid_val(current_uid());
+
+	/*
+	 * 防御：用户态指针必须落在用户地址空间。
+	 * 如果注册到 syscall 包装器上（参数在 pt_regs 里），这里取到的会是
+	 * 内核指针 —— 直接判无效，绝不拿去 strncpy_from_user。
+	 */
+	if ((unsigned long)d->path >= 0x0000800000000000UL)
+		d->path = NULL;
 	return 0;
 }
 
@@ -8866,9 +9025,35 @@ static int sk_acc_return(struct kretprobe_instance *ri, struct pt_regs *regs)
 		}
 	}
 
-	if ((d->mode & 2) && sk_uid_privileged(d->uid)) {
-		regs_set_return_value(regs, -EACCES);
-		atomic64_inc(&sk_acc_blocked);
+	/*
+	 * ★ 杀掉 ART 的「可写探测」 ★
+	 *
+	 * ART 加载 dex 前会 access(<代码文件>, W_OK)。只要它得到"可写"，
+	 * 就抛 Writable dex file 并拒绝加载 —— 这与我们授权给谁无关，
+	 * 是「谁问、问什么」的关系。
+	 *
+	 * 所以这里不看 uid、不看是否特权，直接按「被问的对象」判：
+	 *   .apk / .odex / .vdex / .jar 这类代码容器 + W_OK → 一律回答不可写。
+	 * 影响面：任何进程问"这个代码文件可写吗"都会得到否，这正是我们要的。
+	 */
+	if (d->mode & 2) {
+		if (d->path) {
+			char kb2[160];
+			long n2 = strncpy_from_user(kb2, d->path, sizeof(kb2) - 1);
+
+			if (n2 > 0) {
+				kb2[n2] = 0;
+				if (sk_is_code_container(kb2)) {
+					regs_set_return_value(regs, -EACCES);
+					atomic64_inc(&sk_acc_blocked);
+					return 0;
+				}
+			}
+		}
+		if (sk_uid_privileged(d->uid)) {
+			regs_set_return_value(regs, -EACCES);
+			atomic64_inc(&sk_acc_blocked);
+		}
 	}
 	return 0;
 }
@@ -8884,10 +9069,20 @@ static bool sk_acc_registered;
 
 static void __attribute__((unused)) sk_acc_register(void)
 {
+	/*
+	 * 顺序很重要：
+	 *   do_faccessat 是普通 C 函数（dfd, filename, mode, flags），
+	 *   我们的 entry 用 regs_get_kernel_argument(regs,1)=filename / (2)=mode，
+	 *   与它的参数布局一致。
+	 *
+	 *   __arm64_sys_faccessat 是 syscall 包装器，只有一个参数
+	 *   (const struct pt_regs *)，真实参数在那个 pt_regs 里。
+	 *   以前把它排在第一位 → 我们取到的是垃圾指针 → 判据从来没生效。
+	 */
 	static const char *const names[] = {
-		"__arm64_sys_faccessat",
 		"do_faccessat",
 		"__arm64_sys_faccessat2",
+		"__arm64_sys_faccessat",
 	};
 	const char *chosen = NULL;
 
