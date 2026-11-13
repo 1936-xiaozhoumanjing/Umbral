@@ -7,8 +7,6 @@
 
 ---
 
-> **成品 APK：** [pk/umbral-1.1.apk](apk/) （点进去即可下载，内含 5.4/5.10/5.15/6.1/6.6 五套内核模块）
-
 ## 特性
 
 | 能力 | 说明 |
@@ -108,7 +106,7 @@ $NDK/toolchains/llvm/prebuilt/*/bin/aarch64-linux-android30-clang \
 
 ```powershell
 pwsh manager/build.ps1 -Clean
-# 产物 manager/umbral-1.1.apk（需 android-sdk build-tools + JDK）
+# 产物 manager/umbral-0.90.apk（需 android-sdk build-tools + JDK）
 ```
 
 ---
