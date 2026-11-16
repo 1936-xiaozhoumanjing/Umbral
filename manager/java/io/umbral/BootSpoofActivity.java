@@ -95,9 +95,18 @@ public class BootSpoofActivity extends BaseActivity {
         tvP3.setText("p2 cmdline androidboot.verifiedbootstate：" + s.cmdVbs);
         tvHint.setText("p3 模块已加载：" + (s.loaded ? "是" : "否") + "\n" + s.hint);
 
+        boolean on = s.spoofed || s.loaded;
         suppress = true;
-        sw.setChecked(s.spoofed || s.loaded);
+        sw.setChecked(on);
         suppress = false;
+        if (on) {
+            sw.setEnabled(false);          /* 开了就关不掉 */
+            tvHint.setText(tvHint.getText()
+                    + "\n\n已启用 · 需重启才能关闭\n"
+                    + "⚠ 重启后伪装会失效（值在内核内存里），需重新开启一次");
+        } else {
+            sw.setEnabled(true);
+        }
     }
 
     private void apply(boolean on) {
@@ -109,9 +118,17 @@ public class BootSpoofActivity extends BaseActivity {
                 + "\n回读：属性=" + s.propVbs + " cmdline=" + s.cmdVbs
                 + " 模块=" + (s.loaded ? "已加载" : "未加载")
                 + "\n" + s.hint);
-        sw.setEnabled(true);
+        boolean nowOn = s.spoofed || s.loaded;
         suppress = true;
-        sw.setChecked(s.spoofed || s.loaded);
+        sw.setChecked(nowOn);
         suppress = false;
+        if (nowOn) {
+            sw.setEnabled(false);          /* 一旦开启不可再点，也不能 rmmod */
+            tvHint.setText(tvHint.getText()
+                    + "\n\n已启用 · 需重启才能关闭\n"
+                    + "⚠ 重启后伪装会失效，需重新开启一次");
+        } else {
+            sw.setEnabled(true);
+        }
     }
 }
