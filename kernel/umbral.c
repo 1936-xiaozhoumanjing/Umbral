@@ -111,7 +111,7 @@
 #define proc_lseek	llseek
 #endif
 
-#define SK_VERSION   "1.63.0-shadowall"
+#define SK_VERSION   "1.64.0-hidden"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
