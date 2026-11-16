@@ -92,9 +92,21 @@ public class FlashActivity extends BaseActivity {
         cbBox.setTextSize(13);
         cbBox.setChecked(false);
         cbPropfix = cbBox;
+        final android.widget.Button btnSpoof = new android.widget.Button(this);
+        btnSpoof.setText("启动状态伪装 / 检测");
+        btnSpoof.setTextSize(13);
+        btnSpoof.setOnClickListener(new View.OnClickListener() {
+        	@Override
+        	public void onClick(View v) {
+        		startActivity(new android.content.Intent(FlashActivity.this,
+        				io.umbral.BootSpoofActivity.class));
+        	}
+        });
         try {
         	android.view.ViewGroup root = (android.view.ViewGroup) optLocal.getParent();
         	root.addView(cbBox, root.indexOfChild(optLocal));
+        	android.view.ViewGroup r2 = (android.view.ViewGroup) optLocal.getParent();
+        	r2.addView(btnSpoof, r2.indexOfChild(optLocal));
         } catch (Throwable ignored) { }
         final View optDirect = findViewById(R.id.opt_direct);
         final android.widget.ImageView radioLocal = findViewById(R.id.radio_local);
