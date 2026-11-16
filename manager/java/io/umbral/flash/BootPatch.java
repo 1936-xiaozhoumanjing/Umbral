@@ -398,22 +398,7 @@ public final class BootPatch {
                 Cpio.remove(pr.entries, "umbral.ko");
                 Cpio.remove(pr.entries, "sk_hello.ko");
                 pr.entries.add(Cpio.Entry.regular("umbral.ko", skKo, 0644));
-                /* 高级选项：隐藏 Bootloader 解锁状态（开机早期改 cmdline + 属性区） */
-                if (wantPropfix) {
-                	try {
-                		byte[] pf = readAsset(skCtx, "propfix.ko");
                 
-                		if (pf != null && pf.length > 0) {
-                			Cpio.remove(pr.entries, "propfix.ko");
-                			pr.entries.add(Cpio.Entry.regular("propfix.ko", pf, 0644));
-                			log(cb, "  + propfix.ko " + pf.length + " 字节（隐藏解锁状态）");
-                		} else {
-                			log(cb, "  ! propfix.ko 资产缺失，跳过");
-                		}
-                	} catch (Throwable t) {
-                		log(cb, "  ! propfix 注入失败: " + t);
-                	}
-                }
                 log(cb, "  + sk_root.ko " + skKo.length + " 字节");
                 /* 第四级回退：无 __versions 变体（目标机开了 MODVERSIONS 且 CRC 不符时用） */
                 if (skKoNomv != null) {
