@@ -97,13 +97,71 @@ public final class KmiDetector {
     public static Info detect() {
         // ① os.version 就是 uts.release，不需要任何权限
         Info i = parse(System.getProperty("os.version"));
-        if (i.ok()) return i;
+        if (i.ok() && i.base != null && i.base.startsWith("android")) return i;
 
         // ② /proc/version 里的 "Linux version ..."
-        i = parse(readFirstLine("/proc/version"));
-        if (i.ok()) return i;
+        Info i2 = parse(readFirstLine("/proc/version"));
+        if (i2.ok() && i2.base != null && i2.base.startsWith("android")) return i2;
 
-        return new Info();
+        /*
+         * ③ 厂商内核的 release 串里没有 "-androidNN-" 段。
+         *    例如 vivo 的 5.15.197-gfddbe50ead86-dirty —— 正则匹配不到 Android 版本，
+         *    结果 base 变成 "5.15" 这种不带 android 前缀的串，模块路径找不到，
+         *    界面就显示「无法识别内核版本」，而设备信息里明明能看到完整版本。
+         *
+         *    修法：内核主次版本从 release 里取，Android 版本用 Build.VERSION 推出。
+         */
+        String rel = System.getProperty("os.version");
+        if (rel == null || rel.isEmpty()) rel = readFirstLine("/proc/version");
+        String kmaj = kmajmin(rel);
+        if (kmaj != null) {
+            Info info = new Info();
+            info.raw = rel;
+            String andr = androidFromSdk();
+            if (andr != null) {
+                info.base = andr + "-" + kmaj;
+                info.full = info.base;
+                return info;
+            }
+            /* 连 Android 版本都推不出来时，至少把内核版本原样带回，别显示"未知" */
+            info.base = kmaj;
+            info.full = kmaj;
+            return info;
+        }
+        return (i.ok() ? i : (i2.ok() ? i2 : new Info()));
+    }
+
+    /** 从任意 release 串里取 major.minor（"5.15.197-…" → "5.15"） */
+    private static String kmajmin(String rel) {
+        if (rel == null || rel.isEmpty()) return null;
+        java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)").matcher(rel);
+        if (m.find()) return m.group(1) + "." + m.group(2);
+        return null;
+    }
+
+    /** SDK → androidNN（用于 release 串里缺少 android 标记的厂商内核） */
+    private static String androidFromSdk() {
+        int sdk = android.os.Build.VERSION.SDK_INT;
+        int ver;
+        switch (sdk) {
+            case 31: case 32: ver = 12; break;
+            case 33: ver = 13; break;
+            case 34: ver = 14; break;
+            case 35: ver = 15; break;
+            case 36: ver = 16; break;
+            default:
+                /* 未知 SDK 时用 Build.VERSION.RELEASE 的首段数字兜底 */
+                String r = android.os.Build.VERSION.RELEASE;
+                if (r == null || r.isEmpty()) return null;
+                String[] parts = r.split("\\.");
+                try {
+                    ver = Integer.parseInt(parts[0]);
+                } catch (Throwable t) {
+                    return null;
+                }
+        }
+        return "android" + ver;
     }
 
     /** 本机完整内核版本串（给界面显示） */

@@ -69,7 +69,7 @@ public final class SuProbe {
                 probeRaw(sb, "原生 sh: 写 grant",
                         "printf '%s 1' $$ | dd of=/proc/umbral/grant conv=notrunc");
                 probeRaw(sb, "原生 sh: 直接 echo > grant（对照）",
-                        "echo '10563 1' > /proc/umbral/grant");
+                        "echo '10563 1' >> /proc/umbral/grant");
                 probeRaw(sb, "原生 sh: 写完 id -u", "id -u");
                 probeRaw(sb, "当前 shell 的 pid", "echo $$");
                 probeRaw(sb, "grant 节点权限", "ls -l /proc/umbral/grant");

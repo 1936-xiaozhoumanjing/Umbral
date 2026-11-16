@@ -128,7 +128,22 @@ public final class AppRepository {
     }
 
     public static int grantedCount(Context ctx) {
-        return kernelUidModes().size();
+        /*
+         * 内核授权表里可能残留历史 uid（应用卸载重装会换 uid）。
+         * 直接返回表大小会把它们算进去（今天显示成 4 个就是这么来的）。
+         * 这里只统计「当前仍安装的包」对应的 uid。
+         */
+        Map<Integer, Integer> modes = kernelUidModes();
+        if (modes.isEmpty()) {
+            return 0;
+        }
+        int n = 0;
+        for (AppEntry e : listAll(ctx)) {
+            if (modes.containsKey(e.uid)) {
+                n++;
+            }
+        }
+        return n;
     }
 
     /** 全部应用，按安装时间倒序 */
@@ -143,7 +158,20 @@ public final class AppRepository {
      *   排序仍然把用户应用放前面，系统应用垫底，避免一屏全是系统包。
      */
     public static List<AppEntry> listAll(Context ctx) {
-        return query(ctx, false, true);
+        List<AppEntry> list = query(ctx, false, true);
+        /* 已授权的永远排在最上面；同组内按应用名排序 */
+        java.util.Collections.sort(list, new Comparator<AppEntry>() {
+            @Override
+            public int compare(AppEntry a, AppEntry b) {
+                if (a.granted != b.granted) {
+                    return a.granted ? -1 : 1;
+                }
+                String na = (a.label == null) ? "" : a.label;
+                String nb = (b.label == null) ? "" : b.label;
+                return na.compareToIgnoreCase(nb);
+            }
+        });
+        return list;
     }
 
     /** 已授权应用，按安装时间倒序 */

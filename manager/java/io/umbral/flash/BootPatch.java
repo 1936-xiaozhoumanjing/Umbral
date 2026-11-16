@@ -111,6 +111,19 @@ public final class BootPatch {
     /**
      * 离线修补（不依赖 Context），便于测试和逐字节验证。
      */
+
+    /*
+     * 无 __versions 的模块变体。patch() 是单线程同步操作，所以用一个静态字段传递，
+     * 避免改动 doPatchCore / patchVendorCore 的签名（那会牵动更多调用点）。
+     * 取自同一份 KMI 目录下的 umbral_nomv.ko；不存在时为 null，行为与之前一致。
+     */
+    private static byte[] skKoNomv;
+
+	/** 高级选项：是否把 propfix（隐藏 Bootloader 解锁状态）打进 ramdisk */
+	public static boolean wantPropfix = false;
+	/** doPatchCore 里没有 Context 参数，用它取 assets */
+	private static android.content.Context skCtx;
+
     public static byte[] patchBytes(byte[] img, byte[] skInit, byte[] skKo,
                                     PatchProgress cb) throws Exception {
         Result r = doPatchCore(img, skInit, skKo, cb);
@@ -158,6 +171,9 @@ public final class BootPatch {
         io.umbral.sk.ModuleRepo.Support sup =
                 io.umbral.sk.ModuleRepo.support(ctx);
         byte[] skKo = (sup.modulePath != null) ? readAsset(ctx, sup.modulePath) : null;
+        skKoNomv = (sup.modulePath != null)
+                ? readAsset(ctx, sup.modulePath.replace("umbral.ko", "umbral_nomv.ko"))
+                : null;
 
         if (skKo != null) {
             log(cb, "  内核版本   " + (sup.rawRelease != null ? sup.rawRelease : "?"));
@@ -379,10 +395,32 @@ public final class BootPatch {
                 // ramdisk 里的文件名必须与之一致，否则 /proc/modules、rmmod、
                 // 以及 umbral_init 的日志全都会对不上号。
                 // 旧名 sk_hello.ko 一并清掉，避免升级时残留两份。
-                Cpio.remove(pr.entries, "sk_root.ko");
+                Cpio.remove(pr.entries, "umbral.ko");
                 Cpio.remove(pr.entries, "sk_hello.ko");
-                pr.entries.add(Cpio.Entry.regular("sk_root.ko", skKo, 0644));
+                pr.entries.add(Cpio.Entry.regular("umbral.ko", skKo, 0644));
+                /* 高级选项：隐藏 Bootloader 解锁状态（开机早期改 cmdline + 属性区） */
+                if (wantPropfix) {
+                	try {
+                		byte[] pf = readAsset(skCtx, "propfix.ko");
+                
+                		if (pf != null && pf.length > 0) {
+                			Cpio.remove(pr.entries, "propfix.ko");
+                			pr.entries.add(Cpio.Entry.regular("propfix.ko", pf, 0644));
+                			log(cb, "  + propfix.ko " + pf.length + " 字节（隐藏解锁状态）");
+                		} else {
+                			log(cb, "  ! propfix.ko 资产缺失，跳过");
+                		}
+                	} catch (Throwable t) {
+                		log(cb, "  ! propfix 注入失败: " + t);
+                	}
+                }
                 log(cb, "  + sk_root.ko " + skKo.length + " 字节");
+                /* 第四级回退：无 __versions 变体（目标机开了 MODVERSIONS 且 CRC 不符时用） */
+                if (skKoNomv != null) {
+                    Cpio.remove(pr.entries, "umbral_nomv.ko");
+                    pr.entries.add(Cpio.Entry.regular("umbral_nomv.ko", skKoNomv, 0644));
+                    log(cb, "  + umbral_nomv.ko " + skKoNomv.length + " 字节（无 __versions 变体）");
+                }
             } else {
                 log(cb, "  - 跳过内核模块（本机 KMI 无匹配模块）");
             }
@@ -616,10 +654,16 @@ public final class BootPatch {
                 // ramdisk 里的文件名必须与之一致，否则 /proc/modules、rmmod、
                 // 以及 umbral_init 的日志全都会对不上号。
                 // 旧名 sk_hello.ko 一并清掉，避免升级时残留两份。
-                Cpio.remove(pr.entries, "sk_root.ko");
+                Cpio.remove(pr.entries, "umbral.ko");
                 Cpio.remove(pr.entries, "sk_hello.ko");
-                pr.entries.add(Cpio.Entry.regular("sk_root.ko", skKo, 0644));
+                pr.entries.add(Cpio.Entry.regular("umbral.ko", skKo, 0644));
                 log(cb, "  + sk_root.ko " + skKo.length + " 字节");
+                /* 第四级回退：无 __versions 变体（目标机开了 MODVERSIONS 且 CRC 不符时用） */
+                if (skKoNomv != null) {
+                    Cpio.remove(pr.entries, "umbral_nomv.ko");
+                    pr.entries.add(Cpio.Entry.regular("umbral_nomv.ko", skKoNomv, 0644));
+                    log(cb, "  + umbral_nomv.ko " + skKoNomv.length + " 字节（无 __versions 变体）");
+                }
             } else {
                 log(cb, "  - 跳过内核模块（本机 KMI 无匹配模块）");
             }

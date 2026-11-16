@@ -114,11 +114,39 @@ public class ModuleAdapter extends BaseAdapter {
         if (h.btnAction != null) {
             if (hasAction) {
                 h.btnAction.setVisibility(View.VISIBLE);
+                h.btnAction.setText("执行");
                 final String idForAction = e.id;
                 h.btnAction.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         runActionScript(idForAction);
+                    }
+                });
+            } else if (hasWeb) {
+                /* 没有脚本但有界面的模块：这个按钮就是「打开界面」入口 */
+                h.btnAction.setVisibility(View.VISIBLE);
+                h.btnAction.setText("打开界面");
+                final String idForWeb = e.id;
+                final android.content.Context cForWeb = ctx;
+                h.btnAction.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        try {
+                            if (io.umbral.ModuleWebUiActivity.indexOf(idForWeb) == null) {
+                                android.widget.Toast.makeText(cForWeb,
+                                        "该模块没有自带界面（webroot/index.html 不存在）",
+                                        android.widget.Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            if (cForWeb instanceof android.app.Activity) {
+                                io.umbral.ModuleWebUiActivity.start(
+                                        (android.app.Activity) cForWeb, idForWeb);
+                            }
+                        } catch (Throwable t) {
+                            android.widget.Toast.makeText(cForWeb,
+                                    "打开界面失败: " + t,
+                                    android.widget.Toast.LENGTH_LONG).show();
+                        }
                     }
                 });
             } else {

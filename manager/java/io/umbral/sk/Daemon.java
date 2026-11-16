@@ -40,7 +40,18 @@ import java.io.RandomAccessFile;
  */
 public final class Daemon {
 
-    private static final String DIR = "/data/local/tmp/umbral/daemon";
+    /*
+     * 守护目录从 /data/local/tmp/umbral/daemon 挪到 App 私有目录。
+     *
+     * 原因：/data/local/tmp 的标签是 shell_data_file，由 App 派生的 sh 子进程
+     * 每秒写一次 hb 心跳 → 每次都产生 4 条 avc: denied（permissive=1 仍然记录）。
+     * 实测审计队列被打爆（audit_lost 累计 9000+，rate limit exceeded 500+ 次），
+     * 进而把 system_server 拖住：整机画面冻结、只剩状态栏。
+     *
+     * 放在 /data/user/0/io.umbral/files 下，属主就是本 App，
+     * 同 uid 访问不产生任何 avc 记录，也不需要任何特权。
+     */
+    private static final String DIR = "/data/user/0/io.umbral/files/daemon";
     private static final String CMD = DIR + "/cmd";
     private static final String OUT = DIR + "/out";
     private static final String ACK = DIR + "/ack";

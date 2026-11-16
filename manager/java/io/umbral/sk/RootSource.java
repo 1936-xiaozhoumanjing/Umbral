@@ -60,6 +60,25 @@ public final class RootSource {
      * 执行一次检测。会起 su 进程，必须在后台线程调用。
      * 首次调用时 KSU / Magisk 会弹授权框，用户需要点允许。
      */
+    /**
+     * 硬判据：能不能列出 /data/adb 的内容。
+     *
+     * 这里刻意不调用 ModuleControl.isLoaded() —— 那条链会起 su 进程，
+     * 而 su 相关代码在拿不到 root 时又会回头调用 RootSource.detect()，
+     * 形成递归 → StackOverflowError → App 一启动就崩（今天的重启就是这个）。
+     * 所以这里只用一个不依赖任何其它类的文件检查。
+     */
+    private static boolean canReadDataAdb() {
+        try {
+            String[] a = new java.io.File("/data/adb").list();
+            if (a != null && a.length > 0) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
     public static RootSource detect() {
         RootSource r = new RootSource();
 
@@ -70,6 +89,19 @@ public final class RootSource {
             r.available = true;
             r.label = "影核";
             r.detail = skVer.trim().isEmpty() ? "自有内核模块" : skVer.trim();
+            return r;
+        }
+
+        /*
+         * 1b) /proc/umbral/version 读不到，但模块可能确实已刷入 ——
+         *     「已刷入」的判定可能来自 hardProbe（能列 /data/adb），
+         *     而 /proc 节点仍被权限挡住。这时来源依然是「影核自有」。
+         */
+        if (canReadDataAdb()) {
+            r.type = SK_ROOT;
+            r.available = true;
+            r.label = "影核";
+            r.detail = "自有内核模块（已刷入，/proc 节点受限）";
             return r;
         }
 

@@ -47,6 +47,43 @@ public final class ModuleControl {
         return new java.io.File("/proc/umbral").exists();
     }
 
+    /**
+     * 硬探测：能不能读 /data/adb 与 /data/data 的目录内容。
+     *
+     * 普通应用永远列不出这两个目录；能列出来只有一种解释 ——
+     * 内核里的判定点/LSM 放行对这个进程生效了，也就是模块在跑且授权成功。
+     * 这条比 /proc/umbral/version 更硬：即使节点被我们自己隐藏，也照样成立。
+     */
+    public static boolean hardProbe() {
+        /*
+         * 模块装上了就会留下 /data/adb/umbral 这个目录（模块自己的数据目录）。
+         * 普通 App 看不到它；能 stat 到就说明影子权限或子进程通路成立。
+         */
+        try {
+            java.io.File d = new java.io.File("/data/adb/umbral");
+            if (d.exists()) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            String[] a = new java.io.File("/data/adb").list();
+            if (a != null && a.length > 0) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String[] b = new java.io.File("/data/data").list();
+            if (b != null && b.length > 3) {   /* 至少能看到几个子目录才算真读到了 */
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
     public static boolean isLoaded() {
         /*
          * 先直接读 /proc/umbral/version —— 这是最便宜的判据：
@@ -54,6 +91,16 @@ public final class ModuleControl {
          *   · 模块加载了但 SELinux 挡着 → 读失败，再退到 su
          * 两种失败要分开处理，不能都当「没加载」。
          */
+        /*
+         * 管理器现在故意不给自己的进程任何内核特权（1.49 起），
+         * 所以直接读 /proc/umbral 一定失败。判定必须走特权子进程。
+         * 顺序：su 子进程读版本 → 直接读 → /data/adb 硬探测。
+         */
+        String sv0 = SkBridge.suRead("/proc/umbral/version");
+        if (sv0 != null && !sv0.trim().isEmpty()) {
+            return true;
+        }
+
         String v = readDirect("/proc/umbral/version");
         if (v != null && !v.trim().isEmpty()) {
             return true;
@@ -62,9 +109,13 @@ public final class ModuleControl {
         if (f.exists()) {
             // 目录在但读不到 → SELinux 挡着，用 su 确认
             String sv = SkBridge.suRead("/proc/umbral/version");
-            return sv != null && !sv.trim().isEmpty();
+            if (sv != null && !sv.trim().isEmpty()) {
+                return true;
+            }
+            // su 也不行时，用「能不能读 /data/adb」做硬判据
+            return hardProbe();
         }
-        return false;
+        return hardProbe();
     }
 
     /** 模块版本，未加载返回 null */
@@ -117,14 +168,49 @@ public final class ModuleControl {
         if (uid <= 0) {
             return false;
         }
-        String m = (mode == MODE_FULL) ? "2" : (mode == MODE_SUPER ? "1" : "0");
+        /*
+         * 统一写成文字形式：super / shadow
+         * 内核解析：数字只有 "1" 算超级用户，写 "2" 会被当成影子 ——
+         * 这就是「界面选了超级用户、内核却是影子」的另一个来源。
+         */
+        String m = (mode == MODE_FULL || mode == MODE_SUPER) ? "super" : "shadow";
         /*
          * 先 off 再写新值 —— 保证一个 uid 只有一条授权记录。
          * 之前直接覆盖写，内核里可能留下两条（影子 + 超级），
          * 模式冲突会让目标应用卡死。
          */
         writeGrant("uid:" + uid + " off");
-        return writeGrant("uid:" + uid + " " + m);
+        if (!writeGrant("uid:" + uid + " " + m)) {
+            return false;
+        }
+        /*
+         * ★ 写入后必须回读确认 ★
+         *
+         * 内核的 grant 写入对格式敏感（"uid 123" 与 "uid:123" 走不同分支），
+         * 写错时它静默忽略 —— 界面却显示"已授权"。
+         * 这里回读 /proc/umbral/grants，确认这一行真的存在，才返回成功。
+         */
+        try {
+            String g = readDirect("/proc/umbral/grants");
+            if (g == null || g.isEmpty()) {
+                g = SkBridge.suRead("/proc/umbral/grants");
+            }
+            if (g != null) {
+                boolean found = false;
+                for (String line : g.split("\n")) {
+                    String t = line.trim();
+                    if (t.startsWith("uid " + uid + " ")) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return true;
     }
 
     /** 撤销某个 uid 的授权 */
@@ -141,7 +227,8 @@ public final class ModuleControl {
             return false;
         }
         String m = (mode == MODE_SUPER) ? "1" : "0";
-        return writeGrant(pid + " " + m);
+        String pm = (mode == MODE_FULL || mode == MODE_SUPER) ? "super" : "shadow";
+        return writeGrant(pid + " " + pm);
     }
 
     /** 给自己授权 —— pid 用自己 */
@@ -165,12 +252,42 @@ public final class ModuleControl {
      * 这样同一份代码在「有策略」和「没策略」的设备上都能工作，
      * 只是前者不需要 root，后者需要。
      */
+
+    /**
+     * 我们自己的 su 壳路径。
+     *
+     * 1.52 起管理器主进程只有影子身份，所有需要 root 的操作都必须走特权子进程。
+     * 系统里没有 /system/bin/su（我们把 KSU 替换掉了），只有 /data/local/tmp/umbral/su，
+     * 所以不能再写死 "su" —— 之前模块开关失败就是这个原因。
+     */
+    private static String suBin() {
+        String[] cand = {
+                "/data/local/tmp/umbral/su",
+                "/data/adb/umbral/su",
+                "/system/bin/su"
+        };
+        for (String c : cand) {
+            try {
+                if (new File(c).exists()) {
+                    return c;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return "su";
+    }
+
     private static boolean writeGrant(String content) {
         if (writeDirect("/proc/umbral/grant", content)) {
             return true;
         }
-        String cmd = "echo '" + content + "' > /proc/umbral/grant && echo UMBRAL_OK";
-        String r = exec(new String[]{"su", "-c", cmd});
+        /*
+         * 用 >> 而不是 >：procfs 节点不接受 O_TRUNC（open 会失败），
+         * grant 只是逐行解析，追加语义就够了。
+         * 这条是「模块开关失败」的直接原因之一。
+         */
+        String cmd = "echo '" + content + "' >> /proc/umbral/grant && echo UMBRAL_OK";
+        String r = exec(new String[]{suBin(), "-c", cmd});
         return r != null && r.contains("UMBRAL_OK");
     }
 
@@ -251,7 +368,7 @@ public final class ModuleControl {
                 + " && echo " + android.os.Process.myUid() + " > " + DIR + "/manager.uid"
                 + " && chmod 644 " + DIR + "/manager.uid"
                 + " && echo UMBRAL_OK";
-        String r = exec(new String[]{"su", "-c", cmd});
+        String r = exec(new String[]{suBin(), "-c", cmd});
         // 清掉临时副本
         try {
             tmp.delete();
@@ -275,7 +392,7 @@ public final class ModuleControl {
         if (isLoaded()) {
             return null;    // 已加载
         }
-        String r = exec(new String[]{"su", "-c",
+        String r = exec(new String[]{suBin(), "-c",
                 "insmod " + PATH + " sk_allow_uid=" + allowUid + " && echo UMBRAL_OK"});
         if (r != null && r.contains("UMBRAL_OK")) {
             return null;
@@ -284,7 +401,7 @@ public final class ModuleControl {
     }
 
     public static String unload() {
-        String r = exec(new String[]{"su", "-c", "rmmod sk_root && echo UMBRAL_OK"});
+        String r = exec(new String[]{suBin(), "-c", "rmmod sk_root && echo UMBRAL_OK"});
         if (r != null && r.contains("UMBRAL_OK")) {
             return null;
         }
@@ -312,6 +429,19 @@ public final class ModuleControl {
                 out.write(buf, 0, n);
             }
             out.flush();
+            closeQuietly(out);
+            out = null;
+            /*
+             * vermagic 适配：PC 上编出来的 .ko，其 vermagic 与厂商内核的 uname -r
+             * 永远不一致，insmod 会直接拒绝加载。这里在打包前把它改成目标机的值。
+             * 失败不阻断流程 —— 只是这一台可能仍会 insmod 失败，日志里能看到原因。
+             */
+            try {
+                String vm = Vermagic.patchFile(dst.getAbsolutePath());
+                android.util.Log.i("umbral", "vermagic: " + vm);
+            } catch (Throwable t) {
+                android.util.Log.w("umbral", "vermagic: 异常 " + t);
+            }
             return true;
         } catch (Exception e) {
             return false;
@@ -401,7 +531,7 @@ public final class ModuleControl {
             String cmd = "mkdir -p " + DIR
                     + " && echo " + me + " > " + DIR + "/manager.uid"
                     + " && chmod 644 " + DIR + "/manager.uid";
-            exec(new String[]{"su", "-c", cmd});
+            exec(new String[]{suBin(), "-c", cmd});
         } catch (Throwable ignored) {
         }
     }

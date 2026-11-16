@@ -21,6 +21,8 @@ import java.io.InputStream;
 
 public class FlashActivity extends BaseActivity {
 
+	private android.widget.CheckBox cbPropfix;
+
     private static final int REQ_PICK = 2001;
 
     private TextView tvPath;
@@ -83,6 +85,17 @@ public class FlashActivity extends BaseActivity {
 
         // 安装方式单选
         final View optLocal = findViewById(R.id.opt_local);
+        
+        /* 高级选项：隐藏 Bootloader 解锁（代码创建，不动 layout 资源） */
+        final android.widget.CheckBox cbBox = new android.widget.CheckBox(this);
+        cbBox.setText("隐藏 Bootloader 解锁状态（green / locked）");
+        cbBox.setTextSize(13);
+        cbBox.setChecked(false);
+        cbPropfix = cbBox;
+        try {
+        	android.view.ViewGroup root = (android.view.ViewGroup) optLocal.getParent();
+        	root.addView(cbBox, root.indexOfChild(optLocal));
+        } catch (Throwable ignored) { }
         final View optDirect = findViewById(R.id.opt_direct);
         final android.widget.ImageView radioLocal = findViewById(R.id.radio_local);
         final android.widget.ImageView radioDirect = findViewById(R.id.radio_direct);
@@ -370,6 +383,8 @@ public class FlashActivity extends BaseActivity {
             android.content.Intent i = new android.content.Intent(
                     FlashActivity.this, PatchProgressActivity.class);
             i.putExtra(PatchProgressActivity.EXTRA_PATH, lastPickedPath);
+            // 高级选项：隐藏 Bootloader 解锁状态（刷入界面第一个高级项）
+            i.putExtra("propfix", cbPropfix != null && cbPropfix.isChecked());
             startActivity(i);
             return;
         }

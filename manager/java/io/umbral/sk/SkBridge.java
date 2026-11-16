@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
  */
 public final class SkBridge {
 
-    public static final String MANAGER_VERSION = "0.90";
+    public static final String MANAGER_VERSION = "1.63";
 
     public static final int MODE_NONE    = 0;
     public static final int MODE_LKA     = 1;
@@ -88,11 +88,14 @@ public final class SkBridge {
 
     /** 内核模块是否在线 */
     public static boolean isConnected() {
-        if (sConnected == null) {
-            sConnected = probe();
+            /* 单一判据：与模块页共用 ModuleControl.isLoaded()，
+             * 避免「显示未刷入但能看到 root 来源/模块数」的自相矛盾。 */
+            if (sConnected == null) {
+                sConnected = io.umbral.sk.ModuleControl.isLoaded()
+                        ? Boolean.TRUE : probe();
+            }
+            return sConnected;
         }
-        return sConnected;
-    }
 
     public static void invalidate() {
         sConnected = null;

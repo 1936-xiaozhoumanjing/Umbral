@@ -232,7 +232,7 @@ public final class UmTemplates {
                 "/data/local/tmp/umbral/su",
                 "/data/local/tmp/umbral/umbrald",
                 "/data/local/tmp/umbral/bin",
-                "/data/local/tmp/umbral/daemon",
+                "/data/user/0/io.umbral/files/daemon",
                 "/data/local/tmp/umbral/signature.txt",
                 "/data/local/tmp/umbral/props.txt",
                 "/data/local/tmp/umbral/.last_boot",

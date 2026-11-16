@@ -256,6 +256,41 @@ public final class ModuleRepository {
                 : ("touch '" + flag + "' && rm -f '" + pend + "' && "
                    + "([ -f '" + flag + "' ] && echo OK || echo FAIL)");
 
+        /*
+         * ★ 先直接用文件 API 做 ★
+         *
+         * 1.63 起影子用户已能写 /data/adb（CAP_DAC_OVERRIDE + MAC 全放行），
+         * 不需要再绕 su —— 而 su 那条路要 escape，失败率高。
+         * 直接建/删 disable 文件并用 exists() 复核，失败再回退 su。
+         */
+        try {
+            java.io.File flagFile = new java.io.File(flag);
+            java.io.File pendFile = new java.io.File(pend);
+
+            if (enabled) {
+                if (flagFile.exists() && !flagFile.delete()) {
+                    /* 删不掉就走下面的 su 兜底 */
+                } else {
+                    try { pendFile.createNewFile(); } catch (Throwable ignored) { }
+                    if (!flagFile.exists()) {
+                        return null;      /* 成功 */
+                    }
+                }
+            } else {
+                boolean made = false;
+                try { made = flagFile.createNewFile() || flagFile.exists(); }
+                catch (Throwable ignored) { }
+                if (made) {
+                    try { pendFile.delete(); } catch (Throwable ignored) { }
+                    if (flagFile.exists()) {
+                        return null;      /* 成功 */
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            /* 落到 su 兜底 */
+        }
+
         String out = null;
         try {
             io.umbral.sk.SuBridge.R r = io.umbral.sk.SuBridge.root(cmd);
