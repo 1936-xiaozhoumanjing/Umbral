@@ -49,7 +49,7 @@ static int ensure_mount(const char *src, const char *target, const char *fstype)
 }
 
 // 用 init_module syscall 加载 .ko
-static int load_module(const char *path) {
+static int load_module(const char *path, const char *args) {
     int fd = open(path, O_RDONLY);
     if (fd < 0) {
         char b[128];
@@ -69,7 +69,7 @@ static int load_module(const char *path) {
     close(fd);
     if (n < 0 || (size_t)n != sz) { free(buf); return -1; }
 
-    long ret = syscall(SYS_init_module, buf, sz, "");
+    long ret = syscall(SYS_init_module, buf, sz, args ? args : "");
     free(buf);
 
     if (ret < 0) {
@@ -130,11 +130,11 @@ int main(int argc, char **argv, char **envp) {
     ensure_mount("sysfs", "/sys", "sysfs");
 
     // 3. 加载我们的模块（失败不阻塞启动）
-    load_module("/umbral.ko");
+    load_module("/umbral.ko", "hide=1");
     /* propfix：隐藏 Bootloader 解锁状态（改 cmdline + 属性区，值保留到重启）
      *  存在才加载：未勾选高级选项时 ramdisk 里没有这个文件
      *  加载失败不影响主流程 */
-    load_module("/propfix.ko");
+    load_module("/propfix.ko", "");
 
     // 4. 把 /init 换成符号链接
     replace_init();

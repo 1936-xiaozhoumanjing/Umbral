@@ -7215,10 +7215,10 @@ fail:
 	return -ENOMEM;
 #if SK_NO_PROCDIR
 skip_procdir:
-	;
+	return 0;
 #endif
-}
 
+}
 static void sk_grant_exit(void)
 {
 	sk_grant_clear();
