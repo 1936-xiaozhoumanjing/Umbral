@@ -69,14 +69,15 @@ public final class Guard {
 
     /** 读取当前状态；模块不可用时返回 null */
     public static State read() {
-        File f = new File("/proc/umbral/guard");
-        if (!f.exists()) {
+        /* 走统一封装（内部已含劫持通道重定向与回落），不再自己 open 文件 */
+        String raw = io.umbral.sk.ModuleControl.readDirect("/proc/umbral/guard");
+        if (raw == null) {
             return null;
         }
         State st = new State();
         BufferedReader r = null;
         try {
-            r = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
+            r = new BufferedReader(new java.io.StringReader(raw));
             String line;
             while ((line = r.readLine()) != null) {
                 line = line.trim();
@@ -117,7 +118,7 @@ public final class Guard {
 
     /** 开启 / 关闭 */
     public static boolean setEnabled(boolean on) {
-        return Shell.writeProc("/proc/umbral/guard", on ? "on" : "off");
+        return io.umbral.sk.ModuleControl.writeDirectPublic("/proc/umbral/guard", on ? "on" : "off");
     }
 
     /** 清空肇事记录与计数 */

@@ -160,8 +160,8 @@ public final class ModuleRunner {
     private static int kernelVerCode() {
         java.io.BufferedReader r = null;
         try {
-            r = new java.io.BufferedReader(new java.io.FileReader("/proc/umbral/version"));
-            String v = r.readLine();
+            String v0 = io.umbral.sk.ModuleControl.readDirect("/proc/umbral/version");
+            String v = v0 == null ? null : v0.trim();
             if (v == null) {
                 return 0;
             }

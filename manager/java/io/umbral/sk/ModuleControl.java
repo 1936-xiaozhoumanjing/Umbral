@@ -356,6 +356,30 @@ public final class ModuleControl {
         return null;
     }
 
+
+    /** 把探测到的通道路径落盘（给 shell 拼路径的地方用，例如 SuProbe / LauncherSession） */
+    public static void skChanPersist(android.content.Context ctx) {
+        try {
+            String p = skChanFind();
+            java.io.File f = new java.io.File(ctx.getFilesDir(), "chan");
+            if (p == null) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+                return;
+            }
+            java.io.FileOutputStream fo = new java.io.FileOutputStream(f);
+            fo.write(p.getBytes("UTF-8"));
+            fo.flush();
+            fo.close();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** shell 侧通道路径（没有通道时返回 null） */
+    public static String skChanPath() {
+        return skChanFind();
+    }
+
     private static boolean skChanBlocked(String n) {
         String[] bad = { "stat", "meminfo", "cpuinfo", "vmstat", "loadavg", "uptime",
                 "version", "modules", "filesystems", "ns_last_pid", "tainted",
@@ -397,6 +421,11 @@ public final class ModuleControl {
     }
 
     /** 直接读文件（不经 su） */
+    /** 供其它类使用的写入入口（内部已含通道重定向与回落） */
+    public static boolean writeDirectPublic(String path, String content) {
+        return writeDirect(path, content);
+    }
+
     public static String readDirect(String path) {
         if (path != null && path.contains("/umbral/")) {
             String sub = skChanCmd(path);
