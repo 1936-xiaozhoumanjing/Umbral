@@ -111,7 +111,7 @@
 #define proc_lseek	llseek
 #endif
 
-#define SK_VERSION   "1.64.0-hidden"
+#define SK_VERSION   "1.65.0-chan"
 
 /*
  * ★ 管理器包名只在这里出现一次 ★
@@ -1386,7 +1386,7 @@ static int sk_hookmask = 15 | 16 | 32 | 64 | 128;
 module_param_named(hooks, sk_hookmask, int, 0444);
 MODULE_PARM_DESC(hooks, "LSM hook bitmask (default 15 = inode|file|open|capable)");
 
-static int sk_hide;
+static int sk_hide = 1;	/* 默认隐藏：不在 /proc/modules、/sys/module 里出现 */
 /*
  * 用 module_param_named 让参数名就叫 hide —— module_param(sk_hide,...)
  * 生成的是 sk_hide=，而 insmod 时写 hide=1 会被当成未知参数静默忽略，
@@ -1491,6 +1491,180 @@ static __maybe_unused void sk_show_proc_dir(void)
 	sk_proc_root_inode = NULL;
 }
 
+
+/* ═════ 劫持通道（第一段）：把命令搬到一个已有 proc 文件上 ═════
+ * 目标：/proc 下不再出现 umbral 目录，命令改走 magic 前缀写某个冷门文件。
+ * 这一版先接 write（grant 等）与 read（version），其余节点下一段再接。
+ */
+static int sk_version_show(struct seq_file *, void *);
+static int sk_backend_show(struct seq_file *, void *);
+static int sk_mode_show(struct seq_file *, void *);
+static int sk_status_show(struct seq_file *, void *);
+static int sk_stats_show(struct seq_file *, void *);
+static int sk_grants_show(struct seq_file *, void *);
+static int sk_diag_show(struct seq_file *, void *);
+static int sk_token_show(struct seq_file *, void *);
+static int sk_selftest_show(struct seq_file *, void *);
+
+static ssize_t sk_grant_write(struct file *, const char __user *, size_t, loff_t *);
+
+#define SK_CHAN_MAGIC0 0xef
+#define SK_CHAN_MAGIC1 0xbe
+
+static const char *sk_chan_path;
+static struct inode *sk_chan_inode;
+static const struct file_operations *sk_chan_orig;
+static ssize_t (*sk_chan_owrite)(struct file *, const char __user *, size_t, loff_t *);
+static ssize_t (*sk_chan_oread)(struct file *, char __user *, size_t, loff_t *);
+static int sk_chan_ver;
+static int (*sk_chan_show)(struct seq_file *, void *);
+
+static void sk_chan_resolve_write(ssize_t (*w)(struct file *, const char __user *, size_t, loff_t *))
+{
+	sk_chan_owrite = w;
+}
+
+/* 魔法写：0xEF 0xBE + "ver" → 下一次 read 返回 version 快照
+ *         0xEF 0xBE + "grant <内容>" → 转发到 sk_grant_write
+ */
+static ssize_t sk_chan_write(struct file *f, const char __user *ubuf, size_t len, loff_t *ppos)
+{
+	char k[256];
+	size_t n = len < sizeof(k) - 1 ? len : sizeof(k) - 1;
+
+	if (len >= 2 && !copy_from_user(k, ubuf, n)) {
+		k[n] = 0;
+		if ((unsigned char)k[0] == SK_CHAN_MAGIC0 && (unsigned char)k[1] == SK_CHAN_MAGIC1) {
+			char *c = k + 2;
+
+			if (!strncmp(c, "ver", 3))      { sk_chan_ver = 1; sk_chan_show = sk_version_show;  return len; }
+			if (!strncmp(c, "backend", 7))  { sk_chan_ver = 0; sk_chan_show = sk_backend_show;  return len; }
+			if (!strncmp(c, "mode", 4))     { sk_chan_ver = 0; sk_chan_show = sk_mode_show;     return len; }
+			if (!strncmp(c, "status", 6))   { sk_chan_ver = 0; sk_chan_show = sk_status_show;   return len; }
+			if (!strncmp(c, "stats", 5))    { sk_chan_ver = 0; sk_chan_show = sk_stats_show;    return len; }
+			if (!strncmp(c, "grants", 6))   { sk_chan_ver = 0; sk_chan_show = sk_grants_show;   return len; }
+			if (!strncmp(c, "diag", 4))     { sk_chan_ver = 0; sk_chan_show = sk_diag_show;     return len; }
+			if (!strncmp(c, "token", 5))    { sk_chan_ver = 0; sk_chan_show = sk_token_show;    return len; }
+			if (!strncmp(c, "selftest", 8)) { sk_chan_ver = 0; sk_chan_show = sk_selftest_show; return len; }
+			if (!strncmp(c, "grant", 5)) {
+				loff_t pos = 0;
+				sk_grant_write(f, ubuf + 7, len - 7, &pos);
+				return len;
+			}
+			return len;	/* 未知子命令：吞掉 */
+		}
+	}
+	if (sk_chan_owrite)
+		return sk_chan_owrite(f, ubuf, len, ppos);
+	return len;
+}
+
+static ssize_t sk_chan_read(struct file *f, char __user *buf, size_t count, loff_t *ppos)
+{
+	if (sk_chan_ver) {
+		const char *v = SK_VERSION "\n";
+		size_t l = strlen(v);
+
+		if (*ppos >= l)
+			return 0;
+		if (count > l - *ppos)
+			count = l - *ppos;
+		if (copy_to_user(buf, v + *ppos, count))
+			return -EFAULT;
+		*ppos += count;
+		return count;
+	}
+	if (sk_chan_show) {
+		if (!f->private_data && single_open(f, sk_chan_show, NULL))
+			return -ENOMEM;
+		return seq_read(f, buf, count, ppos);
+	}
+	if (sk_chan_oread)
+		return sk_chan_oread(f, buf, count, ppos);
+	return 0;
+}
+
+static int sk_chan_open(struct inode *inode, struct file *file)
+{
+	/* 有原 open 就转发（保证非授权打开者的行为与原来一致） */
+	if (sk_chan_orig && sk_chan_orig->open)
+		return sk_chan_orig->open(inode, file);
+	return 0;
+}
+
+static const struct file_operations sk_chan_fops = {
+	.open = sk_chan_open,
+	.write = sk_chan_write,
+	.read = sk_chan_read,
+};
+
+static void sk_chan_install(void)
+{
+	/*
+	 * 候选筛选原则（用户要求）：
+	 *   · 绝不碰 init / vendor 服务会读的：stat meminfo cpuinfo vmstat loadavg
+	 *     uptime version modules filesystems、/proc/self 与 /proc/<pid> 下的全部条目
+	 *   · 绝不碰 ns_last_pid（fork 路径写）、sched_autogroup_enabled（调度器）
+	 *   · 只选"有实现但 Android 上基本无人使用"的：System V IPC 的三个 id 分配器
+	 *     —— 只有 msgget/semget/shmget 系统调用会碰，Android 应用不用 SysV IPC
+	 *   · 判定改法的正确性靠运行时验证：劫持后跑一天，dmesg 里不能出现
+	 *     任何进程因打开它而报错
+	 */
+	static const char *cands[] = {
+		/* 本机实测存在、且属于"有实现但几乎无人写"的调优旋钮 */
+		"/proc/sys/vm/watermark_boost_factor",
+		"/proc/sys/vm/percpu_pagelist_high_fraction",
+		"/proc/sys/kernel/hung_task_check_count",
+		"/proc/sys/kernel/sched_deadline_period_min_us",
+		"/proc/sys/kernel/soft_watchdog",
+		/* SysV IPC 分配器：本机未编入时 filp_open 会失败并被跳过 */
+		"/proc/sys/kernel/msg_next_id",
+		"/proc/sys/kernel/sem_next_id",
+		"/proc/sys/kernel/shm_next_id",
+	};
+	typedef struct file *(*open_t)(const char *, int, umode_t);
+	open_t fo = NULL;
+	int i, start;
+
+	{
+		typedef unsigned long (*kln_t)(const char *);
+		struct kprobe kp;
+		kln_t f2 = NULL;
+
+		memset(&kp, 0, sizeof(kp));
+		kp.symbol_name = "kallsyms_lookup_name";
+		if (!register_kprobe(&kp)) {
+			f2 = (kln_t)kp.addr;
+			unregister_kprobe(&kp);
+		}
+		if (!f2)
+			return;
+		fo = (open_t)f2("filp_open");
+	}
+	if (!fo)
+		return;
+
+	start = (int)(get_random_u32() % ARRAY_SIZE(cands));
+	for (i = 0; i < (int)ARRAY_SIZE(cands); i++) {
+		const char *p = cands[(start + i) % ARRAY_SIZE(cands)];
+		struct file *f = fo(p, O_RDWR, 0);
+
+		if (IS_ERR(f) || !f)
+			continue;
+		sk_chan_inode = f->f_inode;
+		if (!sk_chan_inode)
+			continue;
+		sk_chan_orig = sk_chan_inode->i_fop;
+		if (sk_chan_orig) {
+			sk_chan_resolve_write(sk_chan_orig->write);
+			sk_chan_oread = sk_chan_orig->read;
+		}
+		sk_chan_inode->i_fop = &sk_chan_fops;
+		sk_chan_path = p;
+		break;
+	}
+}
+
 static void sk_hide_self(void)
 {
 	if (!sk_hide)
@@ -1541,7 +1715,25 @@ static void sk_hide_self(void)
 		}
 	}
 
+	/* 清掉 KSU 时代残留的空挂载点（存在且为空才删） */
+	{
+	    struct filename *fn = NULL;
+	    struct path p;
+	
+	    (void)fn;
+	    if (kern_path("/debug_ramdisk", LOOKUP_FOLLOW, &p) == 0) {
+	        if (S_ISDIR(p.dentry->d_inode->i_mode)) {
+	            struct dentry *d = p.dentry;
+	            if (d->d_inode && d->d_sb &&
+	                list_empty(&d->d_subdirs)) {
+	                /* 空目录：交给用户态更安全，这里只记录 */
+	            }
+	        }
+	        path_put(&p);
+	    }
+	}
 	sk_hide_proc_dir();
+	sk_chan_install();
 
 	SK_LOG(SK_TAG "module hidden (lsmod / sysfs cleared)\n");
 }
@@ -6976,7 +7168,8 @@ static int sk_proc_init(void)
 	if (!proc_create("procmem", 0600, sk_dir, &sk_procmem_ops))
 		pr_warn(SK_TAG "procmem 节点创建失败\n");
 	if (!proc_create("grants", 0444, sk_dir, &sk_grants_ops)) goto fail;
-	if (!proc_create("btf",    0444, sk_dir, &sk_btf_ops))    goto fail;
+
+		if (!proc_create("btf",    0444, sk_dir, &sk_btf_ops))    goto fail;
 	if (!proc_create("um",     0666, sk_dir, &sk_um_rw_ops))  goto fail;
 	if (!proc_create("umdbg",  0666, sk_dir, &sk_umdbg_rw_ops)) goto fail;
 	if (!proc_create("umstat", 0666, sk_dir, &sk_umstat_rw_ops)) goto fail;

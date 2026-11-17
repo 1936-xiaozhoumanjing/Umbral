@@ -301,7 +301,45 @@ public final class ModuleControl {
      *
      *   ParcelFileDescriptor.open(MODE_WRITE_ONLY) 只带 O_WRONLY，proc 文件能开。
      */
+
+    /* ===== /proc/umbral 已隐藏：改走内核劫持通道 ===== */
+    private static String skChanPath;
+
+    private static final String[] SK_CHAN_CANDS = {
+            "/proc/sys/vm/watermark_boost_factor",
+            "/proc/sys/vm/percpu_pagelist_high_fraction",
+            "/proc/sys/kernel/hung_task_check_count",
+            "/proc/sys/kernel/sched_deadline_period_min_us",
+            "/proc/sys/kernel/soft_watchdog",
+            "/proc/sys/kernel/msg_next_id",
+            "/proc/sys/kernel/sem_next_id",
+            "/proc/sys/kernel/shm_next_id",
+    };
+
+    private static String skChanCmd(String path) {
+        int i = path == null ? -1 : path.lastIndexOf("/umbral/");
+        return i < 0 ? null : path.substring(i + 8);
+    }
+
+    private static String skChanFind() {
+        if (skChanPath != null) return skChanPath;
+        for (String p : SK_CHAN_CANDS) {
+            try {
+                writeDirect(p, "\u00ef\u00be" + "ver");
+                String r = readDirect(p);
+                if (r != null && r.contains(".")) { skChanPath = p; return p; }
+            } catch (Throwable ignored) { }
+        }
+        return null;
+    }
+
     private static boolean writeDirect(String path, String content) {
+        if (path != null && path.contains("/umbral/") && !content.startsWith("\u00ef\u00be")) {
+            String sub = skChanCmd(path);
+            String p = skChanFind();
+            return sub != null && p != null
+                    && writeDirect(p, "\u00ef\u00be" + sub + " " + content.trim());
+        }
         android.os.ParcelFileDescriptor pfd = null;
         java.io.FileOutputStream fo = null;
         try {
@@ -321,6 +359,14 @@ public final class ModuleControl {
 
     /** 直接读文件（不经 su） */
     public static String readDirect(String path) {
+        if (path != null && path.contains("/umbral/")) {
+            String sub = skChanCmd(path);
+            String p = skChanFind();
+            if (sub != null && p != null && writeDirect(p, "\u00ef\u00be" + sub)) {
+                String r = readDirect(p);
+                if (r != null) return r;
+            }
+        }
         java.io.FileInputStream in = null;
         try {
             in = new java.io.FileInputStream(path);
