@@ -1069,7 +1069,7 @@ public class MainActivity extends BaseActivity {
                 java.util.List<String> rules = io.umbral.um.UmTemplates.buildRules(uid, t);
                 int ok = 0;
                 for (String line : rules) {
-                    if (io.umbral.sk.Shell.writeProc("/proc/umbral/um",
+                    if (io.umbral.sk.ModuleControl.writeDirectPublic("/proc/umbral/um",
                             io.umbral.um.UmTemplates.toBare(line))) {
                         ok++;
                     }

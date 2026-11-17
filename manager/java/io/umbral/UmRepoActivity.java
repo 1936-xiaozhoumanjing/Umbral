@@ -364,7 +364,7 @@ public class UmRepoActivity extends BaseActivity {
                     if (err == null) {
                         for (int uid : uids) {
                             for (String line : UmTemplates.buildRules(uid, t)) {
-                                io.umbral.sk.Shell.writeProc("/proc/umbral/um",
+                                io.umbral.sk.ModuleControl.writeDirectPublic("/proc/umbral/um",
                                         io.umbral.um.UmTemplates.toBare(line));
                             }
                         }

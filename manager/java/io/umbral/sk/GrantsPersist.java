@@ -78,7 +78,10 @@ public final class GrantsPersist {
         }
         /* 直接读不到就走 su 读（有真 root 时这条能成） */
         try {
-            SuBridge.R r = SuBridge.root("cat /proc/umbral/grants 2>/dev/null");
+            String gRaw = io.umbral.sk.ModuleControl.readDirect("/proc/umbral/grants");
+        SuBridge.R r = new SuBridge.R();
+        r.out = gRaw == null ? "" : gRaw;
+        r.code = gRaw == null ? 1 : 0;
             if (r.out != null && !r.out.trim().isEmpty()) {
                 return r.out;
             }

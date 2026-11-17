@@ -113,6 +113,14 @@
 
 #define SK_VERSION   "1.65.0-chan"
 
+/* 编译开关：
+ *   0 = 保留 /proc/umbral（当前状态，通道与旧节点并存）
+ *   1 = 完全不创建 /proc/umbral，只用劫持通道
+ *       ⇒ 切换前必须确认通道可用（管理器已支持扫描探测 + 双路回落） */
+#ifndef SK_NO_PROCDIR
+#define SK_NO_PROCDIR 0
+#endif
+
 /*
  * ★ 管理器包名只在这里出现一次 ★
  *
@@ -7163,6 +7171,10 @@ static const struct proc_ops sk_mnt_ops = {
 
 static int sk_proc_init(void)
 {
+#if SK_NO_PROCDIR
+	/* 不建目录：所有命令只走劫持通道 */
+	goto skip_procdir;
+#endif
 	sk_dir = proc_mkdir("umbral", NULL);
 	if (!sk_dir) return -ENOMEM;
 
@@ -7201,6 +7213,10 @@ fail:
 	remove_proc_subtree("sk", NULL);
 	sk_dir = NULL;
 	return -ENOMEM;
+#if SK_NO_PROCDIR
+skip_procdir:
+	;
+#endif
 }
 
 static void sk_grant_exit(void)
