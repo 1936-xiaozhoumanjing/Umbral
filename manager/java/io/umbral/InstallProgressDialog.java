@@ -95,8 +95,9 @@ public class InstallProgressDialog {
 
         tvStep = new TextView(ctx);
         tvStep.setText("准备中…");
-        tvStep.setTextSize(13);
-        tvStep.setTextColor(Color.parseColor("#666666"));
+        tvStep.setTextSize(14);                       /* 与刷入页一致 */
+        tvStep.setTextColor(Color.parseColor("#8A8A93"));
+        tvStep.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams lpStep = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpStep.topMargin = pad / 2;
@@ -106,7 +107,7 @@ public class InstallProgressDialog {
         bar.setMax(this.totalSteps);
         bar.setProgress(0);
         LinearLayout.LayoutParams lpBar = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, (int) (6 * ctx.getResources().getDisplayMetrics().density));
+                ViewGroup.LayoutParams.MATCH_PARENT, (int) (8 * ctx.getResources().getDisplayMetrics().density));
         lpBar.topMargin = pad / 2;
         root.addView(bar, lpBar);
 
@@ -115,8 +116,10 @@ public class InstallProgressDialog {
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
         lpSv.topMargin = pad / 2;
         tvLog = new TextView(ctx);
-        tvLog.setTextSize(11);
-        tvLog.setTextColor(Color.parseColor("#333333"));
+        tvLog.setTextSize(12);                        /* 与刷入页日志区一致 */
+        tvLog.setTextColor(Color.parseColor("#1B1B1F"));
+        tvLog.setPadding(pad / 2, pad / 2, pad / 2, pad / 2);
+        tvLog.setBackgroundColor(Color.parseColor("#0DFFFFFF"));
         tvLog.setTypeface(android.graphics.Typeface.MONOSPACE);
         tvLog.setTextIsSelectable(true);
         sv.addView(tvLog);
