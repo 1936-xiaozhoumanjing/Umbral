@@ -86,6 +86,8 @@ public class PatchProgressActivity extends BaseActivity implements PatchProgress
         });
 
         String path = getIntent().getStringExtra(EXTRA_PATH);
+        BootPatch.wantPropfix  = getIntent().getBooleanExtra("propfix", false);
+        BootPatch.wantNoProcDir = getIntent().getBooleanExtra("noprocdir", false);
         if (path == null || path.isEmpty()) {
             log("X 没有指定镜像文件");
             failNow("失败");

@@ -21,6 +21,8 @@ import java.io.InputStream;
 
 public class FlashActivity extends BaseActivity {
 
+	private android.widget.Switch cbHideProc;
+
 	private android.widget.CheckBox cbPropfix;
 
     private static final int REQ_PICK = 2001;
@@ -44,6 +46,31 @@ public class FlashActivity extends BaseActivity {
         tvStep = findViewById(R.id.tv_flash_step);
         btnPick = findViewById(R.id.btn_pick_image);
         btnPatch = findViewById(R.id.btn_patch);
+
+        /* ── 高级选项：镜像区下方 ── */
+        final android.widget.Switch swHideProc = new android.widget.Switch(this);
+        swHideProc.setText("彻底隐藏 PROC");
+        swHideProc.setTextSize(14);
+        swHideProc.setChecked(false);
+        try {
+        	android.view.ViewGroup host = (android.view.ViewGroup)
+        			findViewById(R.id.btn_pick_image).getParent().getParent();
+        	android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        	box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        	int pad2 = (int) (14 * getResources().getDisplayMetrics().density);
+        	box.setPadding(pad2, pad2, pad2, pad2);
+        	android.widget.TextView tvAdv = new android.widget.TextView(this);
+        	tvAdv.setText("高级选项");
+        	tvAdv.setTextSize(13);
+        	box.addView(tvAdv);
+        	box.addView(swHideProc);
+        	android.widget.TextView tvTip = new android.widget.TextView(this);
+        	tvTip.setText("开启后不再创建 /proc/umbral，命令改走随机劫持的 /proc/sys 条目");
+        	tvTip.setTextSize(11);
+        	box.addView(tvTip);
+        	host.addView(box);
+        } catch (Throwable ignored) { }
+        cbHideProc = swHideProc;
         btnFlash = findViewById(R.id.btn_flash);
 
         findViewById(R.id.btn_back).setOnClickListener(new View.OnClickListener() {
@@ -373,6 +400,7 @@ public class FlashActivity extends BaseActivity {
             android.content.Intent i = new android.content.Intent(
                     FlashActivity.this, PatchProgressActivity.class);
             i.putExtra(PatchProgressActivity.EXTRA_PATH, lastPickedPath);
+        i.putExtra("noprocdir", cbHideProc != null && cbHideProc.isChecked());
             // 高级选项：隐藏 Bootloader 解锁状态（刷入界面第一个高级项）
             startActivity(i);
             return;

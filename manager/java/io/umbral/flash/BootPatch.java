@@ -121,6 +121,8 @@ public final class BootPatch {
 
 	/** 高级选项：是否把 propfix（隐藏 Bootloader 解锁状态）打进 ramdisk */
 	public static boolean wantPropfix = false;
+	/** 高级选项：彻底隐藏 /proc/umbral（改用不建目录的 ko 变体） */
+	public static boolean wantNoProcDir = false;
 	/** doPatchCore 里没有 Context 参数，用它取 assets */
 	private static android.content.Context skCtx;
 
@@ -171,6 +173,16 @@ public final class BootPatch {
         io.umbral.sk.ModuleRepo.Support sup =
                 io.umbral.sk.ModuleRepo.support(ctx);
         byte[] skKo = (sup.modulePath != null) ? readAsset(ctx, sup.modulePath) : null;
+        if (skKo != null && wantNoProcDir) {
+        	String npd = sup.modulePath.replace("umbral.ko", "umbral_npd.ko");
+        	byte[] alt = readAsset(ctx, npd);
+        	if (alt != null && alt.length > 0) {
+        		skKo = alt;
+        		log(cb, "  使用变体 " + npd + "（彻底隐藏 /proc/umbral）");
+        	} else {
+        		log(cb, "  ! 找不到 " + npd + "，沿用普通版本");
+        	}
+        }
         skKoNomv = (sup.modulePath != null)
                 ? readAsset(ctx, sup.modulePath.replace("umbral.ko", "umbral_nomv.ko"))
                 : null;
