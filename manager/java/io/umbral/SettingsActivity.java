@@ -71,14 +71,36 @@ public class SettingsActivity extends BaseActivity {
         final TextView value = findViewById(R.id.tv_language_value);
         value.setText(LocaleHelper.label(this, LocaleHelper.index(this)));
 
+        /* 内核 · 隐藏 Bootloader 痕迹：热加载 propfix（改 cmdline + 属性区） */
+        {
+            android.widget.Button btnBlh = new android.widget.Button(this);
+            btnBlh.setText("内核 · 隐藏 Bootloader 痕迹");
+            btnBlh.setTextSize(14);
+            try {
+                android.view.ViewGroup host = (android.view.ViewGroup)
+                        findViewById(R.id.row_privacy).getParent();
+                host.addView(btnBlh, host.indexOfChild(
+                        findViewById(R.id.row_privacy)));
+            } catch (Throwable t) {
+                try {
+                    ((android.view.ViewGroup) findViewById(android.R.id.content))
+                            .addView(btnBlh);
+                } catch (Throwable ignored) { }
+            }
+            btnBlh.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new android.content.Intent(SettingsActivity.this,
+                            io.umbral.BootSpoofActivity.class));
+                }
+            });
+        }
+
         findViewById(R.id.row_privacy).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new android.app.AlertDialog.Builder(SettingsActivity.this)
-                        .setTitle(R.string.privacy_title)
-                        .setMessage(R.string.privacy_body)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show();
+                startActivity(new android.content.Intent(SettingsActivity.this,
+                        io.umbral.PrivacyActivity.class));
             }
         });
 

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.umbral"
-    android:versionCode="1630"
-    android:versionName="1.63">
+    android:versionCode="1640"
+    android:versionName="1.64">
 
     <uses-sdk
         android:minSdkVersion="29"
@@ -120,5 +120,6 @@
         <activity android:name=".BootSpoofActivity"
             android:label="启动状态伪装"
             android:exported="false" />
-</application>
+        <activity android:name=".PrivacyActivity" android:label="隐私与合规" android:exported="false" />
+    </application>
 </manifest>
