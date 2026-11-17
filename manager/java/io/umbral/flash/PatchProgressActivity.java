@@ -34,6 +34,9 @@ import java.util.Locale;
 public class PatchProgressActivity extends BaseActivity implements PatchProgress {
 
     public static final String EXTRA_PATH = "path";
+    /** 界面模式：patch = 刷入镜像；module = 安装模块。两者共用同一个 KSU 风格界面 */
+    public static final String EXTRA_MODE = "mode";
+    public static final String MODE_MODULE = "module";
 
     /** 每行日志之间的间隔（毫秒）。40 行 ≈ 2 秒，观感接近 Magisk */
     private static final long LOG_INTERVAL = 55;
@@ -102,6 +105,18 @@ public class PatchProgressActivity extends BaseActivity implements PatchProgress
     }
 
     private void startPatch(final File f) {
+        final String __mode = getIntent().getStringExtra(EXTRA_MODE);
+        if (MODE_MODULE.equals(__mode)) {
+            new Thread(new Runnable() { @Override public void run() {
+                log("安装模块：" + f.getName()); progress(10);
+                io.umbral.module.ModuleInstaller.Result r =
+                    io.umbral.module.ModuleInstaller.install(PatchProgressActivity.this, f.getAbsolutePath());
+                progress(90);
+                if (r.ok) { log("模块 id：" + r.id + "  名称：" + r.name); onFinished("安装完成", true, r.id); }
+                else { onFinished("安装失败", false, r.error == null ? "" : r.error); }
+            }}).start();
+            return;
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
