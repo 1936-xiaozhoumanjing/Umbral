@@ -64,6 +64,26 @@ public class FlashActivity extends BaseActivity {
         	tvAdv.setTextSize(13);
         	box.addView(tvAdv);
         	box.addView(swHideProc);
+        	
+        	/* 隐藏 Bootloader 解锁：一次性，用完即删模块 */
+        	android.widget.Button btnBlh = new android.widget.Button(this);
+        	btnBlh.setText("隐藏 Bootloader 解锁（用完即删）");
+        	btnBlh.setTextSize(13);
+        	btnBlh.setOnClickListener(new View.OnClickListener() {
+        		@Override
+        		public void onClick(final View vv) {
+        			btnBlh.setEnabled(false);
+        			tvStep.setText("正在热加载并立即卸载模块…");
+        			new Thread(new Runnable() { @Override public void run() {
+        				final String res = io.umbral.sk.BootSpoof.runOnce(FlashActivity.this);
+        				runOnUiThread(new Runnable() { @Override public void run() {
+        					tvStep.setText(res);
+        					btnBlh.setEnabled(true);
+        				} });
+        			} }).start();
+        		}
+        	});
+        	box.addView(btnBlh);
         	android.widget.TextView tvTip = new android.widget.TextView(this);
         	tvTip.setText("开启后不再创建 /proc/umbral，命令改走随机劫持的 /proc/sys 条目");
         	tvTip.setTextSize(11);

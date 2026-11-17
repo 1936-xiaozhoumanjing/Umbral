@@ -60,6 +60,48 @@ public final class BootSpoof {
         return s;
     }
 
+
+    /**
+     * 一次性流程（用完即删）：
+     *   ① assets 里取出 propfix.ko 到私有目录
+     *   ② insmod → 它把 ro.boot.verifiedbootstate 改成 green、flash.locked 改成 1
+     *   ③ 立刻 rmmod（值已经写进内核内存/属性区，卸载不影响）
+     *   ④ 删掉磁盘上的 .ko
+     * 返回一行结果说明给 UI 显示。
+     */
+    public static String runOnce(Context ctx) {
+        java.io.File dst = new java.io.File(ctx.getFilesDir(), KO_NAME);
+        StringBuilder sb = new StringBuilder();
+
+        try {
+            if (!extract(ctx, ASSET, dst)) {
+                return "失败：assets 里没有 " + ASSET;
+            }
+            //noinspection ResultOfMethodCallIgnored
+            dst.setReadable(true, false);
+
+            String r1 = sh("insmod " + dst.getAbsolutePath());
+            sb.append("insmod: ").append(r1 == null || r1.isEmpty() ? "ok" : r1);
+
+            String p1 = getprop("ro.boot.verifiedbootstate");
+            String fl = getprop("ro.boot.flash.locked");
+            sb.append("  |  now: vbs=").append(p1).append(" locked=").append(fl);
+
+            String r2 = sh("rmmod propfix");
+            sb.append("  |  rmmod: ").append(r2 == null || r2.isEmpty() ? "ok" : r2);
+
+            //noinspection ResultOfMethodCallIgnored
+            dst.delete();
+            sb.append("  |  .ko 已从磁盘删除");
+
+            String p2 = getprop("ro.boot.verifiedbootstate");
+            sb.append("  |  卸载后 vbs=").append(p2);
+        } catch (Throwable t) {
+            sb.append("  异常: ").append(t.getMessage());
+        }
+        return sb.toString();
+    }
+
     /** 开：提取 assets 里的 propfix.ko → insmod → 立刻删除磁盘文件 */
     public static String enable(Context ctx) {
         if (new File("/sys/module/propfix").exists()) return "already loaded";
