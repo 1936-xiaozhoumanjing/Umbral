@@ -58,6 +58,15 @@ public class PatchProgressActivity extends BaseActivity implements PatchProgress
     /** 修补结束后的收尾动作，等队列清空才执行 */
     private Runnable finishAction = null;
 
+    /** 统一入口：安装模块（与刷入镜像同一个整页界面） */
+    public static void startModule(android.content.Context ctx, java.io.File zip) {
+        android.content.Intent it = new android.content.Intent(ctx, PatchProgressActivity.class);
+        it.putExtra(EXTRA_PATH, zip.getAbsolutePath());
+        it.putExtra(EXTRA_MODE, MODE_MODULE);
+        it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        ctx.startActivity(it);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,7 +121,31 @@ public class PatchProgressActivity extends BaseActivity implements PatchProgress
                 io.umbral.module.ModuleInstaller.Result r =
                     io.umbral.module.ModuleInstaller.install(PatchProgressActivity.this, f.getAbsolutePath());
                 progress(90);
-                if (r.ok) { log("模块 id：" + r.id + "  名称：" + r.name); onFinished("安装完成", true, r.id); }
+                if (r.ok) {
+                log("模块 id：" + r.id + "  名称：" + r.name);
+                try {
+                    java.io.File mdir = new java.io.File("/data/adb/modules", r.id);
+                    java.io.File dis = new java.io.File(mdir, "disable");
+                    if (dis.exists() && dis.delete()) log("已删除 disable 标记（默认启用）");
+                    new java.io.File(mdir, ".pending_reboot").createNewFile();
+                } catch (Throwable ignored) { }
+                try {
+                    java.io.File cz = new java.io.File(
+                            new java.io.File("/data/adb/modules", r.id), "customize.sh");
+                    if (cz.exists()) {
+                        log("执行 customize.sh …");
+                        io.umbral.sk.SuBridge.R cr = io.umbral.sk.SuBridge.root(
+                                "cd /data/adb/modules/" + r.id
+                                + " && export MODPATH=/data/adb/modules/" + r.id
+                                + " MODID=" + r.id + " KSU=true"
+                                + " MAGISK_VER=27.0 MAGISK_VER_CODE=27000"
+                                + " && /system/bin/sh customize.sh 2>&1");
+                        if (cr.out != null) for (String ln : cr.out.split("\n")) log("   | " + ln);
+                        log("customize.sh exit=" + cr.code);
+                    }
+                } catch (Throwable t) { log("customize.sh 异常：" + t); }
+                onFinished("安装完成", true, r.id);
+            }
                 else { onFinished("安装失败", false, r.error == null ? "" : r.error); }
             }}).start();
             return;

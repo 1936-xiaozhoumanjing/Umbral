@@ -1583,6 +1583,11 @@ public class MainActivity extends BaseActivity {
                     return;
                 }
 
+                /* 统一走 KSU 风格整页界面（逻辑在 PatchProgressActivity 内） */
+                if (System.currentTimeMillis() > 0) {
+                    io.umbral.flash.PatchProgressActivity.startModule(MainActivity.this, tmp);
+                    return;
+                }
                 pg.step(1, "压缩包：" + tmp.getName() + "（" + tmp.length() + " 字节）");
                 pg.step(2, "XZ 解码器：" + (io.umbral.module.XzDecoder.available()
                         ? "可用" : "不可用（只支持 Deflate）"));
