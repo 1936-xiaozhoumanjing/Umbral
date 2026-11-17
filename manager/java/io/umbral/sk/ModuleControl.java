@@ -321,8 +321,16 @@ public final class ModuleControl {
         return i < 0 ? null : path.substring(i + 8);
     }
 
+    private static boolean skChanAbsent;
+
     private static String skChanFind() {
         if (skChanPath != null) return skChanPath;
+        if (skChanAbsent) return null;
+        /* /proc/umbral 还在 ⇒ 模块没有通道实现（旧版 ko），不要探测也不要改道 */
+        if (new java.io.File("/proc/umbral/version").exists()) {
+            skChanAbsent = true;
+            return null;
+        }
         /* 扫描式探测：内核随机挑一个 /proc/sys/{vm,kernel} 下的冷门条目劫持，
          * 我们不知道是哪个，就逐个试（写 magic+ver，能读回带点号的内容即命中）。
          * 黑名单里的绝不试，避免误改系统关键项。 */
@@ -344,6 +352,7 @@ public final class ModuleControl {
                 } catch (Throwable ignored) { }
             }
         }
+        skChanAbsent = true;
         return null;
     }
 
@@ -363,8 +372,12 @@ public final class ModuleControl {
         if (path != null && path.contains("/umbral/") && !content.startsWith("\u00ef\u00be")) {
             String sub = skChanCmd(path);
             String p = skChanFind();
-            return sub != null && p != null
-                    && writeDirect(p, "\u00ef\u00be" + sub + " " + content.trim());
+            /* 通道能用就走通道；不能用必须回落到直接写 /proc/umbral/xxx，
+             * 否则模块没有通道实现时（例如旧版 ko）授权会全部失败。 */
+            if (sub != null && p != null
+                    && writeDirect(p, "\u00ef\u00be" + sub + " " + content.trim())) {
+                return true;
+            }
         }
         android.os.ParcelFileDescriptor pfd = null;
         java.io.FileOutputStream fo = null;
